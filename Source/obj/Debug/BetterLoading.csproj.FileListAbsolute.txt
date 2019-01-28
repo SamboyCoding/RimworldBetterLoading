@@ -1,0 +1,30 @@
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\BetterLoading.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\BetterLoading.pdb
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\Assembly-CSharp.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\UnityEngine.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\TextMeshPro-1.0.55.56.0b11.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\Assembly-CSharp-firstpass.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\NAudio.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\NVorbis.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\bin\Debug\UnityEngine.UI.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\obj\Debug\BetterLoading.csprojAssemblyReference.cache
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\obj\Debug\BetterLoading.csproj.CoreCompileInputs.cache
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\obj\Debug\BetterLoading.csproj.CopyComplete
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\obj\Debug\BetterLoading.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\obj\Debug\BetterLoading.pdb
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\bin\Debug\BetterLoading.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\bin\Debug\BetterLoading.pdb
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\obj\Debug\BetterLoading.csprojAssemblyReference.cache
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\obj\Debug\BetterLoading.csproj.CoreCompileInputs.cache
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\obj\Debug\BetterLoading.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\obj\Debug\BetterLoading.pdb
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Assemblies\BetterLoading.dll
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Assemblies\BetterLoading.pdb
+C:\Users\Sam\RiderProjects\Rimworld Mods\BetterLoading\Source\obj\Debug\BetterLoading.csproj.CopyComplete
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source\obj\Debug\BetterLoading.csprojAssemblyReference.cache
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source\obj\Debug\BetterLoading.csproj.CoreCompileInputs.cache
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source\obj\Debug\BetterLoading.dll
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source\obj\Debug\BetterLoading.pdb
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Assemblies\BetterLoading.dll
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Assemblies\BetterLoading.pdb
+C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source\obj\Debug\BetterLoading.csproj.CopyComplete

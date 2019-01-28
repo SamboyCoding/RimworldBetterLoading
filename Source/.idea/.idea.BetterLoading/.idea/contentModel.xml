@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\Sam\.Rider2018.3\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\Sam\.Rider2018.3\system\resharper-host\local\Transient\ReSharperHost\v183\SolutionCaches\_Source.1774780047.00" t="ExcludeRecursive" />
+    <e p="C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Assemblies" t="ExcludeRecursive" />
+    <e p="C:\Users\Sam\Downloads\BetterLoading\BetterLoading\Source" t="IncludeRecursive">
+      <e p="BetterLoading.csproj" t="IncludeRecursive" />
+      <e p="BetterLoadingMain.cs" t="Include" />
+      <e p="LoadingScreenManager.cs" t="Include" />
+      <e p="LoadingStage.cs" t="Include" />
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="packages" t="ExcludeRecursive" />
+      <e p="Properties" t="Include">
+        <e p="AssemblyInfo.cs" t="Include" />
+      </e>
+    </e>
+  </component>
+</project>
