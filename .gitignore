@@ -2,3 +2,5 @@
 Assemblies/BetterLoading\.dll
 
 *.pdb
+
+Source/obj/
