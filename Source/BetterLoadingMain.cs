@@ -8,6 +8,7 @@ using System.Xml;
 using Harmony;
 using JetBrains.Annotations;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -23,6 +24,8 @@ namespace BetterLoading
             var inst = HarmonyInstance.Create("me.samboycoding.blm");
             inst.PatchAll(Assembly.GetExecutingAssembly());
         }
+        
+        #region Initial Game Load Patches
 
         [HarmonyPatch(typeof(LoadedModManager))]
         [HarmonyPatch(nameof(LoadedModManager.LoadModXML))]
@@ -218,5 +221,288 @@ namespace BetterLoading
                 }
             }
         }
+        #endregion
+        
+        #region Save Game Loading Patches
+
+        [HarmonyPatch(typeof(Game))]
+        [HarmonyPatch(nameof(Game.LoadGame))]
+        [UsedImplicitly]
+        public class LoadGamePatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Manager = Resources.FindObjectsOfTypeAll<Root_Play>()[0].gameObject.AddComponent<LoadingScreenManager>();
+                Log.Message("Loading Screen Manager :: Load Small Components :: Start");
+
+                Manager.shouldShow = true;
+                Manager.currentStage = LoadingStage.LoadSmallComponents;
+            }
+        }
+        
+        [HarmonyPatch(typeof(World))]
+        [HarmonyPatch(nameof(World.ExposeData))]
+        [UsedImplicitly]
+        public class LoadWorldPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.LoadSmallComponents)
+                {
+                    Log.Message("Loading Screen Manager :: Load World Map :: Start");
+                    Manager.currentStage = LoadingStage.LoadWorldMap;
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(WorldGenerator))]
+        [HarmonyPatch(nameof(WorldGenerator.GenerateFromScribe))]
+        [UsedImplicitly]
+        public class GenerateWorldPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Generate World Data :: Start");
+                Manager.currentStage = LoadingStage.GenerateWorldData;
+                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 1;
+            }
+        }
+        
+        [HarmonyPatch(typeof(WorldGenerator))]
+        [HarmonyPatch(nameof(WorldGenerator.GenerateWithoutWorldData))]
+        [UsedImplicitly]
+        public class GenerateWorldPatch2
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Generate World Data :: Start");
+                Manager.currentStage = LoadingStage.GenerateWorldData;
+                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 1;
+            }
+        }
+        
+        [HarmonyPatch(typeof(WorldGenStep))]
+        [HarmonyPatch(nameof(WorldGenStep.GenerateFromScribe))]
+        [UsedImplicitly]
+        public class WorldGenStepExecPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix(WorldGenStep __instance)
+            {
+                Manager.numWorldGeneratorsRun++;
+                Manager.currentWorldGenStep = __instance;
+            }
+        }
+        
+        [HarmonyPatch(typeof(WorldGenStep))]
+        [HarmonyPatch(nameof(WorldGenStep.GenerateWithoutWorldData))]
+        [UsedImplicitly]
+        public class WorldGenStepExecPatch2
+        {
+            [UsedImplicitly]
+            public static void Prefix(WorldGenStep __instance)
+            {
+                Manager.numWorldGeneratorsRun++;
+                Manager.currentWorldGenStep = __instance;
+            }
+        }
+        
+        [HarmonyPatch(typeof(World))]
+        [HarmonyPatch(nameof(World.FinalizeInit))]
+        [UsedImplicitly]
+        public class WorldFinalizePatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Finalize World Data :: Start");
+                Manager.currentStage = LoadingStage.FinalizeWorld;
+            }
+        }
+        
+        [HarmonyPatch(typeof(Map))]
+        [HarmonyPatch(nameof(Map.ExposeData))]
+        [UsedImplicitly]
+        public class MapExposePatch
+        {
+            [UsedImplicitly]
+            public static void Prefix(Map __instance)
+            {
+                if (Manager.currentStage >= LoadingStage.FinalizeWorld &&
+                    Manager.currentStage <= LoadingStage.LoadMaps_LoadData)
+                {
+                    Log.Message("Loading Screen Manager :: Load Map (Construct Components) :: Start");
+                    Manager.currentStage = LoadingStage.LoadMaps_ConstructComponents;
+                    Manager.maps.Add(__instance);
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(Map))]
+        [HarmonyPatch("ExposeComponents")]
+        [UsedImplicitly]
+        public class MapLoadPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.LoadMaps_ConstructComponents)
+                {
+                    Log.Message("Loading Screen Manager :: Load Map (Load Components) :: Start");
+                    Manager.currentStage = LoadingStage.LoadMaps_LoadComponents;
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(MapFileCompressor))]
+        [HarmonyPatch(nameof(MapFileCompressor.ExposeData))]
+        [UsedImplicitly]
+        public class MapLoadCompressedPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.LoadMaps_LoadComponents)
+                {
+                    Log.Message("Loading Screen Manager :: Load Map (Load Objects) :: Start");
+                    Manager.currentStage = LoadingStage.LoadMaps_LoadData;
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(CameraDriver))]
+        [HarmonyPatch(nameof(CameraDriver.Expose))]
+        [UsedImplicitly]
+        public class CameraLoadPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.LoadMaps_LoadData)
+                {
+                    Log.Message("Loading Screen Manager :: Init Camera :: Start");
+                    Manager.currentStage = LoadingStage.InitCamera;
+                }
+            }
+        }
+        
+        [HarmonyPatch(typeof(ScribeLoader))]
+        [HarmonyPatch(nameof(ScribeLoader.FinalizeLoading))]
+        [UsedImplicitly]
+        public class ResolveSaveFileReferencesPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Resolve Cross-References :: Start");
+                Manager.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
+            }
+        }
+        
+        [HarmonyPatch(typeof(Map))]
+        [HarmonyPatch(nameof(Map.FinalizeLoading))]
+        [UsedImplicitly]
+        public class MapFinalizeLoadPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix(Map __instance)
+            {
+                Log.Message("Loading Screen Manager :: Spawn Things (Non-Buildings) :: Start");
+                Manager.currentStage = LoadingStage.SpawnThings_NonBuildings;
+                Manager.mapIndexSpawningItems++;
+                
+                //Reflection, fuck yeah!
+                Manager.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
+                                                      Traverse.Create(__instance).Field<List<Thing>>("loadedFullThings")
+                                                          .Value.Count;
+                Manager.numObjectsSpawnedCurrentMap = 0;
+            }
+        }
+        
+        [HarmonyPatch(typeof(GenSpawn))]
+        [HarmonyPatch(nameof(GenSpawn.Spawn))]
+        [HarmonyPatch(new [] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool)})]
+        [UsedImplicitly]
+        public class GenSpawnSpawnPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                    Manager.numObjectsSpawnedCurrentMap++;
+
+            }
+        }
+        
+        [HarmonyPatch(typeof(GenSpawn))]
+        [HarmonyPatch(nameof(GenSpawn.SpawnBuildingAsPossible))]
+        [UsedImplicitly]
+        public class GenSpawnSpawnBuildingPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix(Map __instance)
+            {
+                if (Manager.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                {
+                    Log.Message("Loading Screen Manager :: Spawn Things (Buildings) :: Start");
+                    Manager.currentStage = LoadingStage.SpawnThings_Buildings;
+                }
+
+                if (Manager.currentStage == LoadingStage.SpawnThings_Buildings)
+                    Manager.numObjectsSpawnedCurrentMap++;
+            }
+        }
+        
+        [HarmonyPatch(typeof(GenPlace))]
+        [HarmonyPatch(nameof(GenPlace.TryPlaceThing))]
+        [HarmonyPatch(new [] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(ThingPlaceMode), typeof(Action<Thing, int>), typeof(Predicate<IntVec3>)})]
+        [UsedImplicitly]
+        public class GenPlaceTryPlacePatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                if (Manager.currentStage == LoadingStage.SpawnThings_Buildings)
+                {
+                    Log.Message("Loading Screen Manager :: Spawn Things (Back-Compat) :: Start");
+                    Manager.currentStage = LoadingStage.SpawnThings_BackCompat;
+                }
+
+                if (Manager.currentStage == LoadingStage.SpawnThings_BackCompat)
+                    Manager.numObjectsSpawnedCurrentMap++;
+            }
+        }
+        
+        [HarmonyPatch(typeof(Map))]
+        [HarmonyPatch(nameof(Map.FinalizeInit))]
+        [UsedImplicitly]
+        public class MapFinalizeInitPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Spawn Things (Rebuild/Recalc) :: Start");
+                Manager.currentStage = LoadingStage.SpawnThings_RebuildRecalc;
+            }
+        }
+        
+        [HarmonyPatch(typeof(Game))]
+        [HarmonyPatch(nameof(Game.FinalizeInit))]
+        [UsedImplicitly]
+        public class GameFinalizeInitPatch
+        {
+            [UsedImplicitly]
+            public static void Prefix()
+            {
+                Log.Message("Loading Screen Manager :: Finalize Load :: Start");
+                Manager.currentStage = LoadingStage.FinalizeLoad;
+            }
+        }
+        
+        #endregion
     }
 }
