@@ -307,7 +307,7 @@ namespace BetterLoading
                 {
                     Widgets.Label(rect, "Loading Maps...");
                     barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-                    Widgets.FillableBar(barRect, 0);
+                    Widgets.FillableBar(barRect, 0.2f);
                 }
                 else
                 {
@@ -398,7 +398,7 @@ namespace BetterLoading
             {
                 Widgets.Label(rect, "Spawning all things...");
                 barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-                Widgets.FillableBar(barRect, (float) mapIndexSpawningItems / maps.Count);
+                Widgets.FillableBar(barRect,  (mapIndexSpawningItems + 1f) / (maps.Count + 1f));
             }
             else
             {

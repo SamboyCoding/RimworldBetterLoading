@@ -267,7 +267,7 @@ namespace BetterLoading
             {
                 Log.Message("Loading Screen Manager :: Generate World Data :: Start");
                 Manager.currentStage = LoadingStage.GenerateWorldData;
-                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 1;
+                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
         
@@ -281,7 +281,7 @@ namespace BetterLoading
             {
                 Log.Message("Loading Screen Manager :: Generate World Data :: Start");
                 Manager.currentStage = LoadingStage.GenerateWorldData;
-                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 1;
+                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
         
