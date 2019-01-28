@@ -398,6 +398,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
+                if (Manager.currentStage != LoadingStage.InitCamera) return;
+                
                 Log.Message("Loading Screen Manager :: Resolve Cross-References :: Start");
                 Manager.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
             }
