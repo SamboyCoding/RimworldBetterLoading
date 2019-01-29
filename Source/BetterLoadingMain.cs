@@ -418,10 +418,10 @@ namespace BetterLoading
                 Manager.mapIndexSpawningItems++;
                 
                 //Reflection, fuck yeah!
-                Manager.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
-                                                      Traverse.Create(__instance).Field<List<Thing>>("loadedFullThings")
-                                                          .Value.Count;
-                Manager.numObjectsSpawnedCurrentMap = 0;
+//                Manager.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
+//                                                      Traverse.Create(__instance).Field<List<Thing>>("loadedFullThings")
+//                                                          .Value.Count;
+//                Manager.numObjectsSpawnedCurrentMap = 0;
             }
         }
         
