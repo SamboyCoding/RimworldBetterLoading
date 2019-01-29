@@ -24,7 +24,7 @@ namespace BetterLoading
             var inst = HarmonyInstance.Create("me.samboycoding.blm");
             inst.PatchAll(Assembly.GetExecutingAssembly());
         }
-        
+
         #region Initial Game Load Patches
 
         [HarmonyPatch(typeof(LoadedModManager))]
@@ -63,6 +63,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
+                if (Manager.currentStage != LoadingStage.ReadXMLFiles) return;
                 Log.Message("Loading Screen Manager :: Unify XML Tree :: Start");
                 Manager.currentStage = LoadingStage.UnifyXML;
             }
@@ -76,6 +77,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
+                if (Manager.currentStage != LoadingStage.UnifyXML) return;
+                
                 Log.Message("Loading Screen Manager :: Apply XML Patches :: Start");
                 Manager.numPatchesToLoad = LoadedModManager.RunningMods.Count();
                 Manager.currentStage = LoadingStage.ApplyPatches;
@@ -103,6 +106,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(XmlDocument xmlDoc)
             {
+                if (Manager.currentStage != LoadingStage.ApplyPatches) return;
+                
                 Log.Message("Loading Screen Manager :: Pre-Parse XML Tree :: Start");
                 Manager.numDefsToProcess = xmlDoc.DocumentElement.ChildNodes.Count;
 
@@ -178,7 +183,8 @@ namespace BetterLoading
                     if (Manager.currentStage != LoadingStage.ResolveReferences)
                     {
                         Log.Message("Loading Screen Manager :: Resolve References :: Start");
-                        Manager.numDefDatabases = typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
+                        Manager.numDefDatabases =
+                            typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
                         Manager.currentStage = LoadingStage.ResolveReferences;
                     }
                 }
@@ -199,10 +205,10 @@ namespace BetterLoading
                     GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().Count();
             }
         }
-        
+
         [HarmonyPatch(typeof(RuntimeHelpers))]
         [HarmonyPatch(nameof(RuntimeHelpers.RunClassConstructor))]
-        [HarmonyPatch(new [] {typeof(RuntimeTypeHandle)})]
+        [HarmonyPatch(new[] {typeof(RuntimeTypeHandle)})]
         [UsedImplicitly]
         public class RunClassConstructorPatch
         {
@@ -212,8 +218,8 @@ namespace BetterLoading
                 //This patch is really sketchy as it's more than possible that this could be called in a million and one places.
                 //Need to safeguard as much as is humanly possible.
                 if (Manager.currentStage != LoadingStage.FinishUp) return;
-                var typeImpl = Type.GetTypeFromHandle(type); 
-                if(typeImpl.TryGetAttribute(out StaticConstructorOnStartup attrib))
+                var typeImpl = Type.GetTypeFromHandle(type);
+                if (typeImpl.TryGetAttribute(out StaticConstructorOnStartup attrib))
                 {
                     //We are calling the constructor of a StaticConstructorOnStartup-Annotated class. In theory.
                     Manager.currentStaticConstructor = typeImpl;
@@ -221,8 +227,9 @@ namespace BetterLoading
                 }
             }
         }
+
         #endregion
-        
+
         #region Save Game Loading Patches
 
         [HarmonyPatch(typeof(Game))]
@@ -233,14 +240,15 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                Manager = Resources.FindObjectsOfTypeAll<Root_Play>()[0].gameObject.AddComponent<LoadingScreenManager>();
+                Manager = Resources.FindObjectsOfTypeAll<Root_Play>()[0].gameObject
+                    .AddComponent<LoadingScreenManager>();
                 Log.Message("Loading Screen Manager :: Load Small Components :: Start");
 
                 Manager.shouldShow = true;
                 Manager.currentStage = LoadingStage.LoadSmallComponents;
             }
         }
-        
+
         [HarmonyPatch(typeof(World))]
         [HarmonyPatch(nameof(World.ExposeData))]
         [UsedImplicitly]
@@ -256,7 +264,7 @@ namespace BetterLoading
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(WorldGenerator))]
         [HarmonyPatch(nameof(WorldGenerator.GenerateFromScribe))]
         [UsedImplicitly]
@@ -270,7 +278,7 @@ namespace BetterLoading
                 Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
-        
+
         [HarmonyPatch(typeof(WorldGenerator))]
         [HarmonyPatch(nameof(WorldGenerator.GenerateWithoutWorldData))]
         [UsedImplicitly]
@@ -284,7 +292,7 @@ namespace BetterLoading
                 Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
-        
+
         [HarmonyPatch(typeof(WorldGenStep))]
         [HarmonyPatch(nameof(WorldGenStep.GenerateFromScribe))]
         [UsedImplicitly]
@@ -297,7 +305,7 @@ namespace BetterLoading
                 Manager.currentWorldGenStep = __instance;
             }
         }
-        
+
         [HarmonyPatch(typeof(WorldGenStep))]
         [HarmonyPatch(nameof(WorldGenStep.GenerateWithoutWorldData))]
         [UsedImplicitly]
@@ -310,7 +318,7 @@ namespace BetterLoading
                 Manager.currentWorldGenStep = __instance;
             }
         }
-        
+
         [HarmonyPatch(typeof(World))]
         [HarmonyPatch(nameof(World.FinalizeInit))]
         [UsedImplicitly]
@@ -323,7 +331,7 @@ namespace BetterLoading
                 Manager.currentStage = LoadingStage.FinalizeWorld;
             }
         }
-        
+
         [HarmonyPatch(typeof(Map))]
         [HarmonyPatch(nameof(Map.ExposeData))]
         [UsedImplicitly]
@@ -341,7 +349,7 @@ namespace BetterLoading
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(Map))]
         [HarmonyPatch("ExposeComponents")]
         [UsedImplicitly]
@@ -357,7 +365,7 @@ namespace BetterLoading
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(MapFileCompressor))]
         [HarmonyPatch(nameof(MapFileCompressor.ExposeData))]
         [UsedImplicitly]
@@ -373,7 +381,7 @@ namespace BetterLoading
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(CameraDriver))]
         [HarmonyPatch(nameof(CameraDriver.Expose))]
         [UsedImplicitly]
@@ -389,7 +397,7 @@ namespace BetterLoading
                 }
             }
         }
-        
+
         [HarmonyPatch(typeof(ScribeLoader))]
         [HarmonyPatch(nameof(ScribeLoader.FinalizeLoading))]
         [UsedImplicitly]
@@ -399,12 +407,12 @@ namespace BetterLoading
             public static void Prefix()
             {
                 if (Manager.currentStage != LoadingStage.InitCamera) return;
-                
+
                 Log.Message("Loading Screen Manager :: Resolve Cross-References :: Start");
                 Manager.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
             }
         }
-        
+
         [HarmonyPatch(typeof(Map))]
         [HarmonyPatch(nameof(Map.FinalizeLoading))]
         [UsedImplicitly]
@@ -416,7 +424,7 @@ namespace BetterLoading
                 Log.Message("Loading Screen Manager :: Spawn Things (Non-Buildings) :: Start");
                 Manager.currentStage = LoadingStage.SpawnThings_NonBuildings;
                 Manager.mapIndexSpawningItems++;
-                
+
                 //Reflection, fuck yeah!
 //                Manager.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
 //                                                      Traverse.Create(__instance).Field<List<Thing>>("loadedFullThings")
@@ -424,10 +432,11 @@ namespace BetterLoading
 //                Manager.numObjectsSpawnedCurrentMap = 0;
             }
         }
-        
+
         [HarmonyPatch(typeof(GenSpawn))]
         [HarmonyPatch(nameof(GenSpawn.Spawn))]
-        [HarmonyPatch(new [] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool)})]
+        [HarmonyPatch(new[]
+            {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool)})]
         [UsedImplicitly]
         public class GenSpawnSpawnPatch
         {
@@ -436,10 +445,9 @@ namespace BetterLoading
             {
                 if (Manager.currentStage == LoadingStage.SpawnThings_NonBuildings)
                     Manager.numObjectsSpawnedCurrentMap++;
-
             }
         }
-        
+
         [HarmonyPatch(typeof(GenSpawn))]
         [HarmonyPatch(nameof(GenSpawn.SpawnBuildingAsPossible))]
         [UsedImplicitly]
@@ -458,10 +466,14 @@ namespace BetterLoading
                     Manager.numObjectsSpawnedCurrentMap++;
             }
         }
-        
+
         [HarmonyPatch(typeof(GenPlace))]
         [HarmonyPatch(nameof(GenPlace.TryPlaceThing))]
-        [HarmonyPatch(new [] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(ThingPlaceMode), typeof(Action<Thing, int>), typeof(Predicate<IntVec3>)})]
+        [HarmonyPatch(new[]
+        {
+            typeof(Thing), typeof(IntVec3), typeof(Map), typeof(ThingPlaceMode), typeof(Action<Thing, int>),
+            typeof(Predicate<IntVec3>)
+        })]
         [UsedImplicitly]
         public class GenPlaceTryPlacePatch
         {
@@ -478,7 +490,7 @@ namespace BetterLoading
                     Manager.numObjectsSpawnedCurrentMap++;
             }
         }
-        
+
         [HarmonyPatch(typeof(Map))]
         [HarmonyPatch(nameof(Map.FinalizeInit))]
         [UsedImplicitly]
@@ -491,7 +503,7 @@ namespace BetterLoading
                 Manager.currentStage = LoadingStage.SpawnThings_RebuildRecalc;
             }
         }
-        
+
         [HarmonyPatch(typeof(Game))]
         [HarmonyPatch(nameof(Game.FinalizeInit))]
         [UsedImplicitly]
@@ -504,7 +516,7 @@ namespace BetterLoading
                 Manager.currentStage = LoadingStage.FinalizeLoad;
             }
         }
-        
+
         #endregion
     }
 }
