@@ -4,3 +4,5 @@ Assemblies/BetterLoading\.dll
 *.pdb
 
 Source/obj/
+
+Source/\.idea/
