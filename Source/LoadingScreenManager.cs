@@ -12,6 +12,10 @@ namespace BetterLoading
 
         public LoadingStage currentStage = LoadingStage.CreateClasses;
 
+        public int numModClasses;
+        public int currentModClassBeingInstantiated;
+        public string modBeingInstantiatedName;
+
         public ModContentPack currentlyLoadingDefsFrom;
         public int totalLoadedContentPacks;
         public int numContentPacksLoaded;
@@ -95,11 +99,11 @@ namespace BetterLoading
 
             //------------------------Mod Construction------------------------
             rect.y += 50; //Move down a bit
-            Widgets.Label(rect, currentStage == LoadingStage.CreateClasses ? "Constructing Mods" : "Mods Constructed");
+            Widgets.Label(rect, currentStage == LoadingStage.CreateClasses ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}" : "Mods Constructed");
 
             //Draw a bar
             var barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage == LoadingStage.CreateClasses ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage == LoadingStage.CreateClasses ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses : 1);
 
             //------------------------Def XML Reading------------------------
             rect.y += 50;
