@@ -51,7 +51,7 @@ namespace BetterLoading
 
         public LoadingScreenManager()
         {
-            Log.Message("LoadingScreenManager :: Init");
+            
         }
 
         private void DrawInitialGameLoad()

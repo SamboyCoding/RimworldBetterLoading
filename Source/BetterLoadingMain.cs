@@ -20,6 +20,7 @@ namespace BetterLoading
 
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
+            LogMsg("LoadingScreenManager :: Init");
             Manager = Camera.main.gameObject.AddComponent<LoadingScreenManager>();
             
             Manager.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
