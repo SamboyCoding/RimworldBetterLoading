@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
-using Harmony;
 
 namespace BetterLoading
 {
-    public class LoadingScreenManager : MonoBehaviour
+    public class LoadingScreen : MonoBehaviour
     {
+        public static LoadingScreen Instance { get; private set; }
+        
         public bool shouldShow = true;
 
         public LoadingStage currentStage = LoadingStage.CreateClasses;
@@ -49,9 +50,9 @@ namespace BetterLoading
         public int numObjectsToSpawnCurrentMap;
         public int numObjectsSpawnedCurrentMap;
 
-        public LoadingScreenManager()
+        public LoadingScreen()
         {
-            
+            Instance = this;
         }
 
         private void DrawInitialGameLoad()

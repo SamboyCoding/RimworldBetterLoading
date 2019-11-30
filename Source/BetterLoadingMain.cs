@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using Harmony;
 using JetBrains.Annotations;
-using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -16,15 +13,16 @@ namespace BetterLoading
 {
     public class BetterLoadingMain : Mod
     {
-        public static LoadingScreenManager Manager;
-
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
-            LogMsg("LoadingScreenManager :: Init");
-            Manager = Camera.main.gameObject.AddComponent<LoadingScreenManager>();
+            if (Camera.main == null) return; //Just in case
             
-            Manager.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
-            Manager.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
+            LogMsg("BetterLoading :: Init");
+
+            Camera.main.gameObject.AddComponent<LoadingScreen>();
+            
+            LoadingScreen.Instance.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
+            LoadingScreen.Instance.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
             
             var inst = HarmonyInstance.Create("me.samboycoding.blm");
             inst.PatchAll(Assembly.GetExecutingAssembly());
@@ -47,10 +45,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Type type, params object[] args)
             {
-                if (Manager.currentStage == LoadingStage.CreateClasses && typeof(Mod).IsAssignableFrom(type) && args.Length == 1 && args[0] is ModContentPack pack)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.CreateClasses && typeof(Mod).IsAssignableFrom(type) && args.Length == 1 && args[0] is ModContentPack pack)
                 {
-                    Manager.currentModClassBeingInstantiated++;
-                    Manager.modBeingInstantiatedName = pack.Name;
+                    LoadingScreen.Instance.currentModClassBeingInstantiated++;
+                    LoadingScreen.Instance.modBeingInstantiatedName = pack.Name;
                 }
             }
         }
@@ -64,9 +62,9 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Read XML Files :: Start");
-                Manager.currentStage = LoadingStage.ReadXMLFiles;
-                Manager.totalLoadedContentPacks = LoadedModManager.RunningMods.Count();
-                Manager.numContentPacksLoaded = 0;
+                LoadingScreen.Instance.currentStage = LoadingStage.ReadXMLFiles;
+                LoadingScreen.Instance.totalLoadedContentPacks = LoadedModManager.RunningMods.Count();
+                LoadingScreen.Instance.numContentPacksLoaded = 0;
             }
         }
 
@@ -78,8 +76,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(ModContentPack __instance)
             {
-                Manager.numContentPacksLoaded += 1;
-                Manager.currentlyLoadingDefsFrom = __instance;
+                LoadingScreen.Instance.numContentPacksLoaded += 1;
+                LoadingScreen.Instance.currentlyLoadingDefsFrom = __instance;
             }
         }
 
@@ -91,9 +89,9 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage != LoadingStage.ReadXMLFiles) return;
+                if (LoadingScreen.Instance.currentStage != LoadingStage.ReadXMLFiles) return;
                 LogMsg("Loading Screen Manager :: Unify XML Tree :: Start");
-                Manager.currentStage = LoadingStage.UnifyXML;
+                LoadingScreen.Instance.currentStage = LoadingStage.UnifyXML;
             }
         }
 
@@ -105,11 +103,11 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage != LoadingStage.UnifyXML) return;
+                if (LoadingScreen.Instance.currentStage != LoadingStage.UnifyXML) return;
                 
                 LogMsg("Loading Screen Manager :: Apply XML Patches :: Start");
-                Manager.numPatchesToLoad = LoadedModManager.RunningMods.Count();
-                Manager.currentStage = LoadingStage.ApplyPatches;
+                LoadingScreen.Instance.numPatchesToLoad = LoadedModManager.RunningMods.Count();
+                LoadingScreen.Instance.currentStage = LoadingStage.ApplyPatches;
             }
         }
 
@@ -121,8 +119,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(ModContentPack __instance)
             {
-                Manager.currentlyPatching = __instance;
-                Manager.numPatchesLoaded++;
+                LoadingScreen.Instance.currentlyPatching = __instance;
+                LoadingScreen.Instance.numPatchesLoaded++;
             }
         }
 
@@ -134,19 +132,19 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(XmlDocument xmlDoc)
             {
-                if (Manager.currentStage != LoadingStage.ApplyPatches) return;
+                if (LoadingScreen.Instance.currentStage != LoadingStage.ApplyPatches) return;
                 
                 LogMsg("Loading Screen Manager :: Pre-Parse XML Tree :: Start");
-                Manager.numDefsToProcess = xmlDoc.DocumentElement.ChildNodes.Count;
+                LoadingScreen.Instance.numDefsToProcess = xmlDoc.DocumentElement?.ChildNodes.Count ?? -1;
 
-                Manager.numDefsToPreProcess = 0;
-                var enumerator = xmlDoc.DocumentElement.ChildNodes.GetEnumerator();
-                while (enumerator.MoveNext())
+                LoadingScreen.Instance.numDefsToPreProcess = 0;
+                var enumerator = xmlDoc.DocumentElement?.ChildNodes.GetEnumerator();
+                while (enumerator?.MoveNext() ?? false)
                 {
-                    if (((XmlNode) enumerator.Current).NodeType == XmlNodeType.Element) Manager.numDefsToPreProcess++;
+                    if (((XmlNode) enumerator.Current)?.NodeType == XmlNodeType.Element) LoadingScreen.Instance.numDefsToPreProcess++;
                 }
 
-                Manager.currentStage = LoadingStage.ParseProcessXMLStage1;
+                LoadingScreen.Instance.currentStage = LoadingStage.ParseProcessXMLStage1;
             }
         }
 
@@ -158,8 +156,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.ParseProcessXMLStage1)
-                    Manager.numDefsPreProcessed++;
+                if (LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage1)
+                    LoadingScreen.Instance.numDefsPreProcessed++;
             }
         }
 
@@ -171,10 +169,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.ParseProcessXMLStage1)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage1)
                 {
                     LogMsg("Loading Screen Manager :: Process XML Tree :: Start");
-                    Manager.currentStage = LoadingStage.ParseProcessXMLStage2;
+                    LoadingScreen.Instance.currentStage = LoadingStage.ParseProcessXMLStage2;
                 }
             }
         }
@@ -187,7 +185,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                Manager.numDefsProcessed++;
+                LoadingScreen.Instance.numDefsProcessed++;
             }
         }
 
@@ -200,20 +198,20 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Type genericParam, string methodName)
             {
-                if ((Manager.currentStage == LoadingStage.ParseProcessXMLStage2 ||
-                     Manager.currentStage == LoadingStage.ResolveReferences)
+                if ((LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage2 ||
+                     LoadingScreen.Instance.currentStage == LoadingStage.ResolveReferences)
                     && genericParam.IsSubclassOf(typeof(Def))
                     && methodName == "ResolveAllReferences")
                 {
-                    Manager.currentDatabaseResolving = genericParam;
-                    Manager.numDatabasesReloaded++;
+                    LoadingScreen.Instance.currentDatabaseResolving = genericParam;
+                    LoadingScreen.Instance.numDatabasesReloaded++;
 
-                    if (Manager.currentStage != LoadingStage.ResolveReferences)
+                    if (LoadingScreen.Instance.currentStage != LoadingStage.ResolveReferences)
                     {
                         LogMsg("Loading Screen Manager :: Resolve References :: Start");
-                        Manager.numDefDatabases =
+                        LoadingScreen.Instance.numDefDatabases =
                             typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
-                        Manager.currentStage = LoadingStage.ResolveReferences;
+                        LoadingScreen.Instance.currentStage = LoadingStage.ResolveReferences;
                     }
                 }
             }
@@ -228,8 +226,8 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Call Static CCtors :: Start");
-                Manager.currentStage = LoadingStage.FinishUp;
-                Manager.numStaticConstructorsToCall =
+                LoadingScreen.Instance.currentStage = LoadingStage.FinishUp;
+                LoadingScreen.Instance.numStaticConstructorsToCall =
                     GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().Count();
             }
         }
@@ -245,14 +243,12 @@ namespace BetterLoading
             {
                 //This patch is really sketchy as it's more than possible that this could be called in a million and one places.
                 //Need to safeguard as much as is humanly possible.
-                if (Manager.currentStage != LoadingStage.FinishUp) return;
+                if (LoadingScreen.Instance.currentStage != LoadingStage.FinishUp) return;
                 var typeImpl = Type.GetTypeFromHandle(type);
-                if (typeImpl.TryGetAttribute(out StaticConstructorOnStartup attrib))
-                {
-                    //We are calling the constructor of a StaticConstructorOnStartup-Annotated class. In theory.
-                    Manager.currentStaticConstructor = typeImpl;
-                    Manager.numStaticConstructorsCalled++;
-                }
+                if (!typeImpl.TryGetAttribute(out StaticConstructorOnStartup _)) return;
+                //We are calling the constructor of a StaticConstructorOnStartup-Annotated class. In theory.
+                LoadingScreen.Instance.currentStaticConstructor = typeImpl;
+                LoadingScreen.Instance.numStaticConstructorsCalled++;
             }
         }
 
@@ -268,12 +264,12 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                Manager = Resources.FindObjectsOfTypeAll<Root_Play>()[0].gameObject
-                    .AddComponent<LoadingScreenManager>();
+                Resources.FindObjectsOfTypeAll<Root_Play>()[0].gameObject
+                    .AddComponent<LoadingScreen>();
                 LogMsg("Loading Screen Manager :: Load Small Components :: Start");
 
-                Manager.shouldShow = true;
-                Manager.currentStage = LoadingStage.LoadSmallComponents;
+                LoadingScreen.Instance.shouldShow = true;
+                LoadingScreen.Instance.currentStage = LoadingStage.LoadSmallComponents;
             }
         }
 
@@ -285,10 +281,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.LoadSmallComponents)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadSmallComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load World Map :: Start");
-                    Manager.currentStage = LoadingStage.LoadWorldMap;
+                    LoadingScreen.Instance.currentStage = LoadingStage.LoadWorldMap;
                 }
             }
         }
@@ -302,8 +298,8 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Generate World Data :: Start");
-                Manager.currentStage = LoadingStage.GenerateWorldData;
-                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
+                LoadingScreen.Instance.currentStage = LoadingStage.GenerateWorldData;
+                LoadingScreen.Instance.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
 
@@ -316,8 +312,8 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Generate World Data :: Start");
-                Manager.currentStage = LoadingStage.GenerateWorldData;
-                Manager.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
+                LoadingScreen.Instance.currentStage = LoadingStage.GenerateWorldData;
+                LoadingScreen.Instance.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
 
@@ -329,8 +325,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(WorldGenStep __instance)
             {
-                Manager.numWorldGeneratorsRun++;
-                Manager.currentWorldGenStep = __instance;
+                LoadingScreen.Instance.numWorldGeneratorsRun++;
+                LoadingScreen.Instance.currentWorldGenStep = __instance;
             }
         }
 
@@ -342,8 +338,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(WorldGenStep __instance)
             {
-                Manager.numWorldGeneratorsRun++;
-                Manager.currentWorldGenStep = __instance;
+                LoadingScreen.Instance.numWorldGeneratorsRun++;
+                LoadingScreen.Instance.currentWorldGenStep = __instance;
             }
         }
 
@@ -356,7 +352,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Finalize World Data :: Start");
-                Manager.currentStage = LoadingStage.FinalizeWorld;
+                LoadingScreen.Instance.currentStage = LoadingStage.FinalizeWorld;
             }
         }
 
@@ -368,12 +364,12 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Map __instance)
             {
-                if (Manager.currentStage >= LoadingStage.FinalizeWorld &&
-                    Manager.currentStage <= LoadingStage.LoadMaps_LoadData)
+                if (LoadingScreen.Instance.currentStage >= LoadingStage.FinalizeWorld &&
+                    LoadingScreen.Instance.currentStage <= LoadingStage.LoadMaps_LoadData)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Construct Components) :: Start");
-                    Manager.currentStage = LoadingStage.LoadMaps_ConstructComponents;
-                    Manager.maps.Add(__instance);
+                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_ConstructComponents;
+                    LoadingScreen.Instance.maps.Add(__instance);
                 }
             }
         }
@@ -386,10 +382,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.LoadMaps_ConstructComponents)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_ConstructComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Load Components) :: Start");
-                    Manager.currentStage = LoadingStage.LoadMaps_LoadComponents;
+                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_LoadComponents;
                 }
             }
         }
@@ -402,10 +398,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.LoadMaps_LoadComponents)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_LoadComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Load Objects) :: Start");
-                    Manager.currentStage = LoadingStage.LoadMaps_LoadData;
+                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_LoadData;
                 }
             }
         }
@@ -418,10 +414,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.LoadMaps_LoadData)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_LoadData)
                 {
                     LogMsg("Loading Screen Manager :: Init Camera :: Start");
-                    Manager.currentStage = LoadingStage.InitCamera;
+                    LoadingScreen.Instance.currentStage = LoadingStage.InitCamera;
                 }
             }
         }
@@ -434,10 +430,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage != LoadingStage.InitCamera) return;
+                if (LoadingScreen.Instance.currentStage != LoadingStage.InitCamera) return;
 
                 LogMsg("Loading Screen Manager :: Resolve Cross-References :: Start");
-                Manager.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
+                LoadingScreen.Instance.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
             }
         }
 
@@ -450,14 +446,14 @@ namespace BetterLoading
             public static void Prefix(Map __instance)
             {
                 LogMsg("Loading Screen Manager :: Spawn Things (Non-Buildings) :: Start");
-                Manager.currentStage = LoadingStage.SpawnThings_NonBuildings;
-                Manager.mapIndexSpawningItems++;
+                LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_NonBuildings;
+                LoadingScreen.Instance.mapIndexSpawningItems++;
 
                 //Reflection, fuck yeah!
-//                Manager.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
+//                LoadingScreen.Instance.numObjectsToSpawnCurrentMap = __instance.compressor.ThingsToSpawnAfterLoad().Count() +
 //                                                      Traverse.Create(__instance).Field<List<Thing>>("loadedFullThings")
 //                                                          .Value.Count;
-//                Manager.numObjectsSpawnedCurrentMap = 0;
+//                LoadingScreen.Instance.numObjectsSpawnedCurrentMap = 0;
             }
         }
 
@@ -471,8 +467,8 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.SpawnThings_NonBuildings)
-                    Manager.numObjectsSpawnedCurrentMap++;
+                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                    LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
 
@@ -484,14 +480,14 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Map __instance)
             {
-                if (Manager.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_NonBuildings)
                 {
                     LogMsg("Loading Screen Manager :: Spawn Things (Buildings) :: Start");
-                    Manager.currentStage = LoadingStage.SpawnThings_Buildings;
+                    LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_Buildings;
                 }
 
-                if (Manager.currentStage == LoadingStage.SpawnThings_Buildings)
-                    Manager.numObjectsSpawnedCurrentMap++;
+                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_Buildings)
+                    LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
 
@@ -508,14 +504,14 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (Manager.currentStage == LoadingStage.SpawnThings_Buildings)
+                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_Buildings)
                 {
                     LogMsg("Loading Screen Manager :: Spawn Things (Back-Compat) :: Start");
-                    Manager.currentStage = LoadingStage.SpawnThings_BackCompat;
+                    LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_BackCompat;
                 }
 
-                if (Manager.currentStage == LoadingStage.SpawnThings_BackCompat)
-                    Manager.numObjectsSpawnedCurrentMap++;
+                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_BackCompat)
+                    LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
 
@@ -528,7 +524,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Spawn Things (Rebuild/Recalc) :: Start");
-                Manager.currentStage = LoadingStage.SpawnThings_RebuildRecalc;
+                LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_RebuildRecalc;
             }
         }
 
@@ -541,7 +537,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Finalize Load :: Start");
-                Manager.currentStage = LoadingStage.FinalizeLoad;
+                LoadingScreen.Instance.currentStage = LoadingStage.FinalizeLoad;
             }
         }
 
