@@ -45,7 +45,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Type type, params object[] args)
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.CreateClasses && typeof(Mod).IsAssignableFrom(type) && args.Length == 1 && args[0] is ModContentPack pack)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.CreateClasses && typeof(Mod).IsAssignableFrom(type) && args.Length == 1 && args[0] is ModContentPack pack)
                 {
                     LoadingScreen.Instance.currentModClassBeingInstantiated++;
                     LoadingScreen.Instance.modBeingInstantiatedName = pack.Name;
@@ -62,7 +62,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Read XML Files :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.ReadXMLFiles;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.ReadXMLFiles;
                 LoadingScreen.Instance.totalLoadedContentPacks = LoadedModManager.RunningMods.Count();
                 LoadingScreen.Instance.numContentPacksLoaded = 0;
             }
@@ -89,9 +89,9 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage != LoadingStage.ReadXMLFiles) return;
+                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ReadXMLFiles) return;
                 LogMsg("Loading Screen Manager :: Unify XML Tree :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.UnifyXML;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.UnifyXML;
             }
         }
 
@@ -103,11 +103,11 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage != LoadingStage.UnifyXML) return;
+                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.UnifyXML) return;
                 
                 LogMsg("Loading Screen Manager :: Apply XML Patches :: Start");
                 LoadingScreen.Instance.numPatchesToLoad = LoadedModManager.RunningMods.Count();
-                LoadingScreen.Instance.currentStage = LoadingStage.ApplyPatches;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.ApplyPatches;
             }
         }
 
@@ -132,7 +132,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(XmlDocument xmlDoc)
             {
-                if (LoadingScreen.Instance.currentStage != LoadingStage.ApplyPatches) return;
+                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ApplyPatches) return;
                 
                 LogMsg("Loading Screen Manager :: Pre-Parse XML Tree :: Start");
                 LoadingScreen.Instance.numDefsToProcess = xmlDoc.DocumentElement?.ChildNodes.Count ?? -1;
@@ -144,7 +144,7 @@ namespace BetterLoading
                     if (((XmlNode) enumerator.Current)?.NodeType == XmlNodeType.Element) LoadingScreen.Instance.numDefsToPreProcess++;
                 }
 
-                LoadingScreen.Instance.currentStage = LoadingStage.ParseProcessXMLStage1;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.ParseProcessXMLStage1;
             }
         }
 
@@ -156,7 +156,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage1)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage1)
                     LoadingScreen.Instance.numDefsPreProcessed++;
             }
         }
@@ -169,10 +169,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage1)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage1)
                 {
                     LogMsg("Loading Screen Manager :: Process XML Tree :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.ParseProcessXMLStage2;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.ParseProcessXMLStage2;
                 }
             }
         }
@@ -198,20 +198,20 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Type genericParam, string methodName)
             {
-                if ((LoadingScreen.Instance.currentStage == LoadingStage.ParseProcessXMLStage2 ||
-                     LoadingScreen.Instance.currentStage == LoadingStage.ResolveReferences)
+                if ((LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage2 ||
+                     LoadingScreen.Instance.currentStage == EnumLoadingStage.ResolveReferences)
                     && genericParam.IsSubclassOf(typeof(Def))
                     && methodName == "ResolveAllReferences")
                 {
                     LoadingScreen.Instance.currentDatabaseResolving = genericParam;
                     LoadingScreen.Instance.numDatabasesReloaded++;
 
-                    if (LoadingScreen.Instance.currentStage != LoadingStage.ResolveReferences)
+                    if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ResolveReferences)
                     {
                         LogMsg("Loading Screen Manager :: Resolve References :: Start");
                         LoadingScreen.Instance.numDefDatabases =
                             typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
-                        LoadingScreen.Instance.currentStage = LoadingStage.ResolveReferences;
+                        LoadingScreen.Instance.currentStage = EnumLoadingStage.ResolveReferences;
                     }
                 }
             }
@@ -226,7 +226,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Call Static CCtors :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.FinishUp;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.FinishUp;
                 LoadingScreen.Instance.numStaticConstructorsToCall =
                     GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().Count();
             }
@@ -243,7 +243,7 @@ namespace BetterLoading
             {
                 //This patch is really sketchy as it's more than possible that this could be called in a million and one places.
                 //Need to safeguard as much as is humanly possible.
-                if (LoadingScreen.Instance.currentStage != LoadingStage.FinishUp) return;
+                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.FinishUp) return;
                 var typeImpl = Type.GetTypeFromHandle(type);
                 if (!typeImpl.TryGetAttribute(out StaticConstructorOnStartup _)) return;
                 //We are calling the constructor of a StaticConstructorOnStartup-Annotated class. In theory.
@@ -269,7 +269,7 @@ namespace BetterLoading
                 LogMsg("Loading Screen Manager :: Load Small Components :: Start");
 
                 LoadingScreen.Instance.shouldShow = true;
-                LoadingScreen.Instance.currentStage = LoadingStage.LoadSmallComponents;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.LoadSmallComponents;
             }
         }
 
@@ -281,10 +281,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadSmallComponents)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.LoadSmallComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load World Map :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.LoadWorldMap;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.LoadWorldMap;
                 }
             }
         }
@@ -298,7 +298,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Generate World Data :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.GenerateWorldData;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.GenerateWorldData;
                 LoadingScreen.Instance.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
@@ -312,7 +312,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Generate World Data :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.GenerateWorldData;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.GenerateWorldData;
                 LoadingScreen.Instance.numWorldGeneratorsToRun = WorldGenerator.GenStepsInOrder.Count() - 2;
             }
         }
@@ -352,7 +352,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Finalize World Data :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.FinalizeWorld;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.FinalizeWorld;
             }
         }
 
@@ -364,11 +364,11 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Map __instance)
             {
-                if (LoadingScreen.Instance.currentStage >= LoadingStage.FinalizeWorld &&
-                    LoadingScreen.Instance.currentStage <= LoadingStage.LoadMaps_LoadData)
+                if (LoadingScreen.Instance.currentStage >= EnumLoadingStage.FinalizeWorld &&
+                    LoadingScreen.Instance.currentStage <= EnumLoadingStage.LoadMaps_LoadData)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Construct Components) :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_ConstructComponents;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.LoadMaps_ConstructComponents;
                     LoadingScreen.Instance.maps.Add(__instance);
                 }
             }
@@ -382,10 +382,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_ConstructComponents)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.LoadMaps_ConstructComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Load Components) :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_LoadComponents;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.LoadMaps_LoadComponents;
                 }
             }
         }
@@ -398,10 +398,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_LoadComponents)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.LoadMaps_LoadComponents)
                 {
                     LogMsg("Loading Screen Manager :: Load Map (Load Objects) :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.LoadMaps_LoadData;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.LoadMaps_LoadData;
                 }
             }
         }
@@ -414,10 +414,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.LoadMaps_LoadData)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.LoadMaps_LoadData)
                 {
                     LogMsg("Loading Screen Manager :: Init Camera :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.InitCamera;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.InitCamera;
                 }
             }
         }
@@ -430,10 +430,10 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage != LoadingStage.InitCamera) return;
+                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.InitCamera) return;
 
                 LogMsg("Loading Screen Manager :: Resolve Cross-References :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.ResolveSaveFileCrossReferences;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.ResolveSaveFileCrossReferences;
             }
         }
 
@@ -446,7 +446,7 @@ namespace BetterLoading
             public static void Prefix(Map __instance)
             {
                 LogMsg("Loading Screen Manager :: Spawn Things (Non-Buildings) :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_NonBuildings;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.SpawnThings_NonBuildings;
                 LoadingScreen.Instance.mapIndexSpawningItems++;
 
                 //Reflection, fuck yeah!
@@ -467,7 +467,7 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.SpawnThings_NonBuildings)
                     LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
@@ -480,13 +480,13 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix(Map __instance)
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_NonBuildings)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.SpawnThings_NonBuildings)
                 {
                     LogMsg("Loading Screen Manager :: Spawn Things (Buildings) :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_Buildings;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.SpawnThings_Buildings;
                 }
 
-                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_Buildings)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.SpawnThings_Buildings)
                     LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
@@ -504,13 +504,13 @@ namespace BetterLoading
             [UsedImplicitly]
             public static void Prefix()
             {
-                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_Buildings)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.SpawnThings_Buildings)
                 {
                     LogMsg("Loading Screen Manager :: Spawn Things (Back-Compat) :: Start");
-                    LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_BackCompat;
+                    LoadingScreen.Instance.currentStage = EnumLoadingStage.SpawnThings_BackCompat;
                 }
 
-                if (LoadingScreen.Instance.currentStage == LoadingStage.SpawnThings_BackCompat)
+                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.SpawnThings_BackCompat)
                     LoadingScreen.Instance.numObjectsSpawnedCurrentMap++;
             }
         }
@@ -524,7 +524,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Spawn Things (Rebuild/Recalc) :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.SpawnThings_RebuildRecalc;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.SpawnThings_RebuildRecalc;
             }
         }
 
@@ -537,7 +537,7 @@ namespace BetterLoading
             public static void Prefix()
             {
                 LogMsg("Loading Screen Manager :: Finalize Load :: Start");
-                LoadingScreen.Instance.currentStage = LoadingStage.FinalizeLoad;
+                LoadingScreen.Instance.currentStage = EnumLoadingStage.FinalizeLoad;
             }
         }
 

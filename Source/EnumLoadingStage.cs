@@ -1,6 +1,6 @@
 namespace BetterLoading
 {
-    public enum LoadingStage
+    public enum EnumLoadingStage
     {
         CreateClasses = 0,
         ReadXMLFiles,

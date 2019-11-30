@@ -11,7 +11,7 @@ namespace BetterLoading
         
         public bool shouldShow = true;
 
-        public LoadingStage currentStage = LoadingStage.CreateClasses;
+        public EnumLoadingStage currentStage = EnumLoadingStage.CreateClasses;
 
         public int numModClasses;
         public int currentModClassBeingInstantiated;
@@ -100,11 +100,11 @@ namespace BetterLoading
 
             //------------------------Mod Construction------------------------
             rect.y += 50; //Move down a bit
-            Widgets.Label(rect, currentStage == LoadingStage.CreateClasses ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}" : "Mods Constructed");
+            Widgets.Label(rect, currentStage == EnumLoadingStage.CreateClasses ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}" : "Mods Constructed");
 
             //Draw a bar
             var barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage == LoadingStage.CreateClasses ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses : 1);
+            Widgets.FillableBar(barRect, currentStage == EnumLoadingStage.CreateClasses ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses : 1);
 
             //------------------------Def XML Reading------------------------
             rect.y += 50;
@@ -119,32 +119,32 @@ namespace BetterLoading
             //------------------------XML Unification------------------------
             rect.y += 50;
             Widgets.Label(rect,
-                currentStage < LoadingStage.UnifyXML ? "Waiting for XML Load To Complete..." :
-                currentStage == LoadingStage.UnifyXML ? "Building Def Tree" : "Finished Building Def Tree");
+                currentStage < EnumLoadingStage.UnifyXML ? "Waiting for XML Load To Complete..." :
+                currentStage == EnumLoadingStage.UnifyXML ? "Building Def Tree" : "Finished Building Def Tree");
 
             //Draw a bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.UnifyXML ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.UnifyXML ? 0 : 1);
 
             //------------------------Patch Application------------------------
             rect.y += 50;
             Widgets.Label(rect,
-                currentStage < LoadingStage.ApplyPatches
+                currentStage < EnumLoadingStage.ApplyPatches
                     ? "Waiting for XML Tree..."
-                    : currentStage == LoadingStage.ApplyPatches
+                    : currentStage == EnumLoadingStage.ApplyPatches
                         ? $"Applying mod patches ({numPatchesLoaded}/{numPatchesToLoad}): {(currentlyPatching == null ? "<waiting>" : currentlyPatching.Name)}"
                         : "Patches Applied");
 
             //Draw a bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
             Widgets.FillableBar(barRect,
-                currentStage < LoadingStage.ApplyPatches ? 0 : numPatchesLoaded / (float) numPatchesToLoad);
+                currentStage < EnumLoadingStage.ApplyPatches ? 0 : numPatchesLoaded / (float) numPatchesToLoad);
 
             //------------------------XML Parse/Process Stage 1------------------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.ParseProcessXMLStage1
+            Widgets.Label(rect, currentStage < EnumLoadingStage.ParseProcessXMLStage1
                 ? "Waiting for patches to be applied..."
-                : currentStage == LoadingStage.ParseProcessXMLStage1
+                : currentStage == EnumLoadingStage.ParseProcessXMLStage1
                     ? $"Registering Defs from Patched XML: {numDefsPreProcessed}/{numDefsToPreProcess} ({((float) numDefsPreProcessed / numDefsToPreProcess).ToStringPercent()})"
                     : "Defs Registered");
 
@@ -154,9 +154,9 @@ namespace BetterLoading
 
             //------------------------XML Parse/Process Stage 2------------------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.ParseProcessXMLStage2
+            Widgets.Label(rect, currentStage < EnumLoadingStage.ParseProcessXMLStage2
                 ? "Waiting for defs to be registered..."
-                : currentStage == LoadingStage.ParseProcessXMLStage2
+                : currentStage == EnumLoadingStage.ParseProcessXMLStage2
                     ? $"Creating Defs from Patched XML: {numDefsProcessed}/{numDefsToProcess} ({((float) numDefsProcessed / numDefsToProcess).ToStringPercent()})"
                     : "Defs Created");
 
@@ -166,9 +166,9 @@ namespace BetterLoading
 
             //------------------------Reference Resolving------------------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.ResolveReferences
+            Widgets.Label(rect, currentStage < EnumLoadingStage.ResolveReferences
                 ? "Waiting for defs to be created..."
-                : currentStage == LoadingStage.ResolveReferences
+                : currentStage == EnumLoadingStage.ResolveReferences
                     ? $"Reloading DefDatabase: {currentDatabaseResolving.Name} ({numDatabasesReloaded}/{numDefDatabases})"
                     : "Databases Reloaded");
 
@@ -179,9 +179,9 @@ namespace BetterLoading
             //------------------------Finishing Up------------------------
             rect.y += 50;
             Widgets.Label(rect,
-                currentStage < LoadingStage.FinishUp
+                currentStage < EnumLoadingStage.FinishUp
                     ? "Waiting for databases to finish reload..."
-                    : currentStage == LoadingStage.FinishUp
+                    : currentStage == EnumLoadingStage.FinishUp
                         ? $"Running Startup Static CCtors: {currentStaticConstructor?.FullName} ({numStaticConstructorsCalled}/{numStaticConstructorsToCall})"
                         : "Finished");
 
@@ -260,29 +260,29 @@ namespace BetterLoading
             //----------------Load Small Components------------
             rect.y += 50;
             Widgets.Label(rect,
-                currentStage == LoadingStage.LoadSmallComponents
+                currentStage == EnumLoadingStage.LoadSmallComponents
                     ? "Loading Misc Game Data..."
                     : "Basic Game Data Loaded");
 
             //bar
             var barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage == LoadingStage.LoadSmallComponents ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage == EnumLoadingStage.LoadSmallComponents ? 0 : 1);
 
             //----------------Load World Map------------
             rect.y += 50;
             Widgets.Label(rect,
-                currentStage < LoadingStage.LoadWorldMap ? "Waiting for game data load..." :
-                currentStage == LoadingStage.LoadWorldMap ? "Loading World Map..." : "World Map Loaded");
+                currentStage < EnumLoadingStage.LoadWorldMap ? "Waiting for game data load..." :
+                currentStage == EnumLoadingStage.LoadWorldMap ? "Loading World Map..." : "World Map Loaded");
 
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.LoadWorldMap ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.LoadWorldMap ? 0 : 1);
 
             //----------------Generate World Features------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.GenerateWorldData
+            Widgets.Label(rect, currentStage < EnumLoadingStage.GenerateWorldData
                 ? "Waiting for world map..."
-                : currentStage == LoadingStage.GenerateWorldData
+                : currentStage == EnumLoadingStage.GenerateWorldData
                     ? $"Generating World Feature: {currentWorldGenStep} ({numWorldGeneratorsRun}/{numWorldGeneratorsToRun})"
                     : "World Features Generated");
 
@@ -293,22 +293,22 @@ namespace BetterLoading
 
             //----------------Finalizing World------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.FinalizeWorld
+            Widgets.Label(rect, currentStage < EnumLoadingStage.FinalizeWorld
                 ? "Waiting for feature generation..."
-                : currentStage == LoadingStage.FinalizeWorld
+                : currentStage == EnumLoadingStage.FinalizeWorld
                     ? "Applying finishing touches to world..."
                     : "World Finalized.");
 
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.FinalizeWorld ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.FinalizeWorld ? 0 : 1);
 
             //----------------Map Loading------------
             rect.y += 50;
 
-            if (currentStage >= LoadingStage.LoadMaps_ConstructComponents)
+            if (currentStage >= EnumLoadingStage.LoadMaps_ConstructComponents)
             {
-                if (currentStage <= LoadingStage.LoadMaps_LoadData)
+                if (currentStage <= EnumLoadingStage.LoadMaps_LoadData)
                 {
                     Widgets.Label(rect, "Loading Maps...");
                     barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
@@ -328,7 +328,7 @@ namespace BetterLoading
                 var num = 0;
                 foreach (var unused in maps)
                 {
-                    if (num < maps.Count - 1 || currentStage > LoadingStage.LoadMaps_LoadData)
+                    if (num < maps.Count - 1 || currentStage > EnumLoadingStage.LoadMaps_LoadData)
                     {
                         //This map is loaded fully
                         Widgets.Label(rect, "Map " + (num + 1) + ": Loaded");
@@ -341,15 +341,15 @@ namespace BetterLoading
                     {
                         //This map is partially loaded
                         Widgets.Label(rect,
-                            "Map " + (num + 1) + ": " + (currentStage == LoadingStage.LoadMaps_ConstructComponents
+                            "Map " + (num + 1) + ": " + (currentStage == EnumLoadingStage.LoadMaps_ConstructComponents
                                 ? "Constructing Components..."
-                                : currentStage == LoadingStage.LoadMaps_LoadComponents
+                                : currentStage == EnumLoadingStage.LoadMaps_LoadComponents
                                     ? "Loading Misc Map Details..."
                                     : "Reading Object Data..."));
 
                         barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
                         Widgets.FillableBar(barRect,
-                            (float) (currentStage + 1 - LoadingStage.LoadMaps_ConstructComponents) / 5);
+                            (float) (currentStage + 1 - EnumLoadingStage.LoadMaps_ConstructComponents) / 5);
                     }
 
                     num++;
@@ -359,7 +359,7 @@ namespace BetterLoading
                 rect.x -= 25; //Unindent
                 rect.width += 25;
             }
-            else if (currentStage < LoadingStage.LoadMaps_LoadComponents)
+            else if (currentStage < EnumLoadingStage.LoadMaps_LoadComponents)
             {
                 Widgets.Label(rect, "Waiting for map data...");
                 barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
@@ -367,39 +367,39 @@ namespace BetterLoading
             }
 
             //----------------Init Camera------------
-            Widgets.Label(rect, currentStage < LoadingStage.InitCamera
+            Widgets.Label(rect, currentStage < EnumLoadingStage.InitCamera
                 ? "Waiting for maps to finish loading..."
-                : currentStage == LoadingStage.InitCamera
+                : currentStage == EnumLoadingStage.InitCamera
                     ? "Setting up camera..."
                     : "Camera Setup Complete");
 
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.InitCamera ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.InitCamera ? 0 : 1);
 
             //----------------Resolve Cross-References------------
             rect.y += 50;
-            Widgets.Label(rect, currentStage < LoadingStage.ResolveSaveFileCrossReferences
+            Widgets.Label(rect, currentStage < EnumLoadingStage.ResolveSaveFileCrossReferences
                 ? "Waiting for camera setup..."
-                : currentStage == LoadingStage.ResolveSaveFileCrossReferences
+                : currentStage == EnumLoadingStage.ResolveSaveFileCrossReferences
                     ? "Resolving Def Cross-References..."
                     : "Defs Successfully Cross-Referenced");
 
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.ResolveSaveFileCrossReferences ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.ResolveSaveFileCrossReferences ? 0 : 1);
 
             //----------------Spawning All Things------------
             rect.y += 50;
 
 
-            if (currentStage > LoadingStage.SpawnThings_RebuildRecalc)
+            if (currentStage > EnumLoadingStage.SpawnThings_RebuildRecalc)
             {
                 Widgets.Label(rect, "Things Spawned");
                 barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
                 Widgets.FillableBar(barRect, 1);
             }
-            else if (currentStage >= LoadingStage.SpawnThings_NonBuildings)
+            else if (currentStage >= EnumLoadingStage.SpawnThings_NonBuildings)
             {
                 Widgets.Label(rect, "Spawning all things...");
                 barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
@@ -419,7 +419,7 @@ namespace BetterLoading
             var num2 = 0;
             foreach (var unused in maps)
             {
-                if (num2 < mapIndexSpawningItems || currentStage > LoadingStage.SpawnThings_RebuildRecalc)
+                if (num2 < mapIndexSpawningItems || currentStage > EnumLoadingStage.SpawnThings_RebuildRecalc)
                 {
                     //This map is loaded fully
                     Widgets.Label(rect, "Map " + (num2 + 1) + ": Everything Spawned");
@@ -432,16 +432,16 @@ namespace BetterLoading
                 {
                     //This map is partially loaded
                     Widgets.Label(rect,
-                        "Map " + (num2 + 1) + ": " + (currentStage == LoadingStage.SpawnThings_NonBuildings
+                        "Map " + (num2 + 1) + ": " + (currentStage == EnumLoadingStage.SpawnThings_NonBuildings
                             ? "Spawning Items..."
-                            : currentStage == LoadingStage.SpawnThings_Buildings
+                            : currentStage == EnumLoadingStage.SpawnThings_Buildings
                                 ? "Spawning Buildings..."
-                                : currentStage == LoadingStage.SpawnThings_BackCompat
+                                : currentStage == EnumLoadingStage.SpawnThings_BackCompat
                                     ? "Upgrading Level Format..."
                                     : "Rebuilding & Recalculating Pathfinding Map etc..."));
 
                     barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-                    Widgets.FillableBar(barRect, (float) (currentStage + 1 - LoadingStage.SpawnThings_NonBuildings) / 5);
+                    Widgets.FillableBar(barRect, (float) (currentStage + 1 - EnumLoadingStage.SpawnThings_NonBuildings) / 5);
                 }
                 else
                 {
@@ -461,15 +461,15 @@ namespace BetterLoading
             rect.width += 25;
 
             //----------------Finalize Load------------
-            Widgets.Label(rect, currentStage < LoadingStage.FinalizeLoad
+            Widgets.Label(rect, currentStage < EnumLoadingStage.FinalizeLoad
                 ? "Waiting for things to finish spawning..."
-                : currentStage == LoadingStage.FinalizeLoad
+                : currentStage == EnumLoadingStage.FinalizeLoad
                     ? "Finalizing Game State..."
                     : "Load Complete.");
 
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= LoadingStage.FinalizeLoad ? 0 : 1);
+            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.FinalizeLoad ? 0 : 1);
         }
 
         public void OnGUI()
@@ -481,7 +481,7 @@ namespace BetterLoading
 
             if (!shouldShow) return;
 
-            if (currentStage <= LoadingStage.FinishUp) DrawInitialGameLoad();
+            if (currentStage <= EnumLoadingStage.FinishUp) DrawInitialGameLoad();
             else DrawSaveFileLoad();
         }
     }
