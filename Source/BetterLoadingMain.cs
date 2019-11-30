@@ -13,8 +13,12 @@ namespace BetterLoading
 {
     public class BetterLoadingMain : Mod
     {
+        public static ModContentPack ourContentPack;
+        public static HarmonyInstance Harmony;
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
+            ourContentPack = content;
+            Harmony = HarmonyInstance.Create("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
             
             LogMsg("BetterLoading :: Init");
@@ -24,8 +28,7 @@ namespace BetterLoading
             LoadingScreen.Instance.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
             LoadingScreen.Instance.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
             
-            var inst = HarmonyInstance.Create("me.samboycoding.blm");
-            inst.PatchAll(Assembly.GetExecutingAssembly());
+            Harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 
         private static void LogMsg(string message)
@@ -34,52 +37,6 @@ namespace BetterLoading
         }
 
         #region Initial Game Load Patches
-        
-        //Dodgy patch time :)
-        [HarmonyPatch(typeof(Activator))]
-        [HarmonyPatch(nameof(Activator.CreateInstance))]
-        [HarmonyPatch(new[] {typeof(Type), typeof(object[])})]
-        [UsedImplicitly]
-        public class ActivatorCreateInstancePatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(Type type, params object[] args)
-            {
-                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.CreateClasses && typeof(Mod).IsAssignableFrom(type) && args.Length == 1 && args[0] is ModContentPack pack)
-                {
-                    LoadingScreen.Instance.currentModClassBeingInstantiated++;
-                    LoadingScreen.Instance.modBeingInstantiatedName = pack.Name;
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(LoadedModManager))]
-        [HarmonyPatch(nameof(LoadedModManager.LoadModXML))]
-        [UsedImplicitly]
-        public class LoadModXmlPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                LogMsg("Loading Screen Manager :: Read XML Files :: Start");
-                LoadingScreen.Instance.currentStage = EnumLoadingStage.ReadXMLFiles;
-                LoadingScreen.Instance.totalLoadedContentPacks = LoadedModManager.RunningMods.Count();
-                LoadingScreen.Instance.numContentPacksLoaded = 0;
-            }
-        }
-
-        [HarmonyPatch(typeof(ModContentPack))]
-        [HarmonyPatch(nameof(ModContentPack.LoadDefs))]
-        [UsedImplicitly]
-        public class LoadDefsPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(ModContentPack __instance)
-            {
-                LoadingScreen.Instance.numContentPacksLoaded += 1;
-                LoadingScreen.Instance.currentlyLoadingDefsFrom = __instance;
-            }
-        }
 
         [HarmonyPatch(typeof(LoadedModManager))]
         [HarmonyPatch(nameof(LoadedModManager.CombineIntoUnifiedXML))]
