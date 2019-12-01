@@ -22,7 +22,7 @@ namespace BetterLoading.Stage.InitialLoad
             return "Initializing Mods";
         }
 
-        public override string GetCurrentStepName()
+        public override string? GetCurrentStepName()
         {
             return currentMod.Name;
         }

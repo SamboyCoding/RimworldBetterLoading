@@ -20,7 +20,7 @@ namespace BetterLoading.Stage.InitialLoad
             return "Reading Mod Content Files";
         }
 
-        public override string GetCurrentStepName()
+        public override string? GetCurrentStepName()
         {
             return _currentPack?.Name;
         }

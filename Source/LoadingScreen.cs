@@ -29,15 +29,15 @@ namespace BetterLoading
 
         public int numModClasses;
         public int currentModClassBeingInstantiated;
-        public string modBeingInstantiatedName;
+        public string modBeingInstantiatedName = "";
 
-        public ModContentPack currentlyLoadingDefsFrom;
+        public ModContentPack currentlyLoadingDefsFrom = BetterLoadingMain.ourContentPack;
         public int totalLoadedContentPacks;
         public int numContentPacksLoaded;
 
         public int numPatchesToLoad;
         public int numPatchesLoaded;
-        public ModContentPack currentlyPatching;
+        public ModContentPack currentlyPatching = BetterLoadingMain.ourContentPack;
 
         public int numDefsToPreProcess;
         public int numDefsPreProcessed;
@@ -47,16 +47,16 @@ namespace BetterLoading
 
         public int numDefDatabases;
         public int numDatabasesReloaded;
-        public Type currentDatabaseResolving;
+        public Type currentDatabaseResolving = typeof(Def);
 
         public int numStaticConstructorsToCall;
         public int numStaticConstructorsCalled;
-        public Type currentStaticConstructor;
+        public Type? currentStaticConstructor;
 
         //------------File Loading--------------
         public int numWorldGeneratorsToRun;
         public int numWorldGeneratorsRun;
-        public WorldGenStep currentWorldGenStep;
+        public WorldGenStep? currentWorldGenStep;
 
         public List<Map> maps = new List<Map>();
 
@@ -509,7 +509,7 @@ namespace BetterLoading
             var idx = currentList.IndexOf(_currentStage);
             
             //Handle cases where this stage is complete.
-            if (_currentStage.IsCompleted())
+            while (_currentStage.IsCompleted())
             {
                 if (idx + 1 >= currentList.Count)
                 {
@@ -521,6 +521,7 @@ namespace BetterLoading
                 //Move to next stage
                 Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName());
                 _currentStage = currentList[idx + 1];
+                idx++;
                 Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
             }
 
@@ -535,7 +536,7 @@ namespace BetterLoading
             var pct = currentProgress / maxProgress;
             
             //Draw background
-            UIMenuBackgroundManager.background.BackgroundOnGUI();
+            // UIMenuBackgroundManager.background.BackgroundOnGUI();
             
             //Draw the bar for current stage progress
             var rect = new Rect(200, UI.screenHeight - 440, UI.screenWidth - 400, 40);

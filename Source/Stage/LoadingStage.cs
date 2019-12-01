@@ -19,9 +19,10 @@ namespace BetterLoading.Stage
 
         /// <summary>
         /// Gets the name of the current action being performed by this step (e.g., for the 'Initializing Mods' stage, this could be the name of the current mod).
+        /// If this returns null the current stage progress label will just show a number, not a description of the action. 
         /// </summary>
         /// <returns>A (human-readable) string describing the current action being performed. </returns>
-        public abstract string GetCurrentStepName();
+        public abstract string? GetCurrentStepName();
 
         /// <summary>
         /// Gets the current progress value (i.e the 100 in the example displayed progress 100/200, or the numerator of the fraction used to calculate percentage) 
