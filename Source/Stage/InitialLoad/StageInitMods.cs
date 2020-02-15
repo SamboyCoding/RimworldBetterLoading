@@ -14,7 +14,9 @@ namespace BetterLoading.Stage.InitialLoad
         private static bool _completed;
 
         public StageInitMods(HarmonyInstance instance) : base(instance)
-        { }
+        {
+            
+        }
         
         public override string GetStageName()
         {
@@ -34,6 +36,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override void DoPatching(HarmonyInstance instance)
         {
             instance.Patch(AccessTools.Method(typeof(Activator), nameof(Activator.CreateInstance), new[] {typeof(Type), typeof(object[])}), new HarmonyMethod(typeof(StageInitMods), nameof(OnActivatorCreateInstance)));
+            Log.Message("finished patching aci");
         }
 
         public override bool IsCompleted()
@@ -50,7 +53,7 @@ namespace BetterLoading.Stage.InitialLoad
         public static void OnActivatorCreateInstance(Type type, params object[] args)
         {
             if (_completed) return; //If we're done, don't go again.
-            if(!type.IsInstanceOfType(typeof(Mod))) return; //If we're not constructing a mod bail out.
+            if (!typeof(Mod).IsAssignableFrom(type)) return;  //If we're not constructing a mod bail out.
             if (args.Length != 1 || !(args[0] is ModContentPack pack)) return; //Check the constructor we're using matches the required pattern.
             
             currentModIdx++;

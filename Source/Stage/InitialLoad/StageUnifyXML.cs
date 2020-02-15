@@ -17,6 +17,11 @@ namespace BetterLoading.Stage.InitialLoad
         {
         }
 
+        public override bool IsCompleted()
+        {
+            return _currentAssetNo == _numAssets;
+        }
+
         public override string GetStageName()
         {
             return "Injecting Mod XML";

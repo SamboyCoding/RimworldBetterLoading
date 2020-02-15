@@ -19,7 +19,8 @@ namespace BetterLoading
         {
             new StageInitMods(BetterLoadingMain.Harmony),
             new StageReadXML(BetterLoadingMain.Harmony),
-            new StageUnifyXML(BetterLoadingMain.Harmony)
+            new StageUnifyXML(BetterLoadingMain.Harmony),
+            new StageApplyPatches(BetterLoadingMain.Harmony)
             //TODO: move the rest of the stages to this format.
         };
 
@@ -193,7 +194,6 @@ namespace BetterLoading
                 Text.Anchor = TextAnchor.MiddleCenter;
                 
                 pct = (idx + 1) / (float) currentList.Count;
-                Log.Message($"{idx + 1} / {currentList.Count} = {pct}", true);
                 Widgets.FillableBar(rect, pct);
                 Widgets.Label(rect, $"{idx + 1}/{currentList.Count} ({pct.ToStringPercent()})");
                 
