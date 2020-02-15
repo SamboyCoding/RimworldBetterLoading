@@ -5,16 +5,19 @@ using System.Runtime.CompilerServices;
 using System.Xml;
 using Harmony;
 using JetBrains.Annotations;
+using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
 namespace BetterLoading
 {
-    public class BetterLoadingMain : Mod
+    public sealed class BetterLoadingMain : Mod
     {
-        public static ModContentPack ourContentPack;
-        public static HarmonyInstance Harmony;
+        public static ModContentPack? ourContentPack;
+        public static HarmonyInstance? Harmony;
+        public static LoadingScreen? LoadingScreen;
+        
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
@@ -23,12 +26,21 @@ namespace BetterLoading
             
             LogMsg("BetterLoading :: Init");
 
-            Camera.main.gameObject.AddComponent<LoadingScreen>();
-            
+            LoadingScreen = Resources.FindObjectsOfTypeAll<Root_Entry>()[0].gameObject.AddComponent<LoadingScreen>();
+
             LoadingScreen.Instance.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
             LoadingScreen.Instance.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
-            
-            Harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+            Harmony.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
+                new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+
+            //Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        public static bool DisableVanillaLoadScreen()
+        {
+            //Disable when our load screen is shown
+            return !LoadingScreen.shouldShow;
         }
 
         private static void LogMsg(string message)

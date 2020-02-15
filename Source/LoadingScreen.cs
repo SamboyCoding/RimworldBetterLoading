@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BetterLoading.Stage;
 using BetterLoading.Stage.InitialLoad;
 using UnityEngine;
@@ -7,22 +8,25 @@ using Verse;
 
 namespace BetterLoading
 {
-    public class LoadingScreen : MonoBehaviour
+    public sealed class LoadingScreen : MonoBehaviour
     {
         public static LoadingScreen Instance { get; private set; }
-        
+
         /// <summary>
         /// The load list used at game boot.
         /// </summary>
         public static List<LoadingStage> BootLoadList = new List<LoadingStage>
         {
             new StageInitMods(BetterLoadingMain.Harmony),
-            new StageReadXML(BetterLoadingMain.Harmony)
+            new StageReadXML(BetterLoadingMain.Harmony),
+            new StageUnifyXML(BetterLoadingMain.Harmony)
             //TODO: move the rest of the stages to this format.
         };
 
+        private Texture2D background;
+
         private LoadingStage _currentStage = BootLoadList[0];
-        
+
         public bool shouldShow = true;
 
         public EnumLoadingStage currentStage = EnumLoadingStage.CreateClasses;
@@ -64,9 +68,142 @@ namespace BetterLoading
         public int numObjectsToSpawnCurrentMap;
         public int numObjectsSpawnedCurrentMap;
 
+        public static Texture2D makeSolidColor(Color color)
+        {
+            var texture = new Texture2D(Screen.width, Screen.height);
+            Color[] pixels = Enumerable.Repeat(color, Screen.width * Screen.height).ToArray();
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return texture;
+        }
+        
         public LoadingScreen()
         {
             Instance = this;
+        }
+
+        private void Awake()
+        {
+            Log.Message("BetterLoading :: Injected into main UI");
+        }
+
+        public void OnGUI()
+        {
+            if (!shouldShow) return;
+
+            if (!LongEventHandler.AnyEventNowOrWaiting)
+            {
+                Log.Message("Long event has finished, hiding loading screen.");
+                shouldShow = false;
+                return;
+            }
+
+            if (background == null)
+                background = makeSolidColor(new Color(0.1f, 0.1f, 0.1f, 1));
+
+            try
+            {
+                List<LoadingStage>? currentList = null;
+                if (BootLoadList.Contains(_currentStage))
+                    currentList = BootLoadList;
+
+                if (currentList == null)
+                {
+                    Log.Error("BetterLoading: Current Load Stage is not in a load list!");
+                    shouldShow = false;
+                    return;
+                }
+
+                var idx = currentList.IndexOf(_currentStage);
+
+                //Handle cases where this stage is complete.
+                while (_currentStage.IsCompleted())
+                {
+                    if (idx + 1 >= currentList.Count)
+                    {
+                        Log.Message("BetterLoading: Finished processing load list, hiding.");
+                        shouldShow = false;
+                        return;
+                    }
+
+                    //Move to next stage
+                    Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName());
+                    _currentStage.BecomeInactive();
+                    
+                    _currentStage = currentList[idx + 1];
+                    _currentStage.BecomeActive();
+                    Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
+                    
+                    idx++;
+                }
+
+                var currentProgress = _currentStage.GetCurrentProgress();
+                var maxProgress = _currentStage.GetMaximumProgress();
+                if (currentProgress > maxProgress)
+                {
+                    Log.Error(
+                        $"BetterLoading: Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!",
+                        true);
+                    currentProgress = maxProgress;
+                }
+
+                if (maxProgress == 0)
+                {
+                    Log.Warning($"BetterLoading :: Stage {_currentStage.GetType().FullName} returned maxProgress = 0");
+                    maxProgress = 1;
+                }
+
+                //Draw black background
+                var bgRect = new Rect(0, 0, UI.screenWidth, UI.screenHeight);
+                GUI.DrawTexture(bgRect, background);
+                
+                var pct = currentProgress / (float) maxProgress;
+
+                var currentStageText = _currentStage.GetStageName();
+                var subStageText = _currentStage.GetCurrentStepName();
+                if (subStageText != null)
+                    currentStageText = $"{currentStageText} - {subStageText}";
+
+                Log.Message($"Rendering bar: Current stage is {currentStageText}, % is {pct * 100.0}", true);
+
+                Text.Font = GameFont.Medium;
+                Text.Anchor = TextAnchor.MiddleCenter;
+
+                var titleRect = new Rect(200, 200, UI.screenWidth - 400, 40);
+                Widgets.Label(titleRect, "Initializing Game...");
+
+                Text.Font = GameFont.Small;
+
+                //Draw background
+                // UIMenuBackgroundManager.background.BackgroundOnGUI();
+
+                //Draw the bar for current stage progress
+                var rect = new Rect(200, UI.screenHeight - 440, UI.screenWidth - 400, 40);
+
+                Widgets.FillableBar(rect, pct);
+                Widgets.Label(rect, $"{currentProgress}/{maxProgress} ({pct.ToStringPercent()})");
+                Text.Anchor = TextAnchor.UpperLeft;
+
+                rect.y += 50;
+                Widgets.Label(rect, currentStageText);
+
+                //Draw the bar for current stage
+                rect = new Rect(200, UI.screenHeight - 240, UI.screenWidth - 400, 40);
+
+                Text.Anchor = TextAnchor.MiddleCenter;
+                
+                pct = (idx + 1) / (float) currentList.Count;
+                Log.Message($"{idx + 1} / {currentList.Count} = {pct}", true);
+                Widgets.FillableBar(rect, pct);
+                Widgets.Label(rect, $"{idx + 1}/{currentList.Count} ({pct.ToStringPercent()})");
+                
+                Text.Anchor = TextAnchor.UpperLeft;
+
+            }
+            catch (Exception e)
+            {
+                Log.ErrorOnce($"Encountered exception while rendering loading screen: {e}", 0xBEEF99, true);
+            }
         }
 
         private void DrawInitialGameLoad()
@@ -114,11 +251,17 @@ namespace BetterLoading
 
             //------------------------Mod Construction------------------------
             rect.y += 50; //Move down a bit
-            Widgets.Label(rect, currentStage == EnumLoadingStage.CreateClasses ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}" : "Mods Constructed");
+            Widgets.Label(rect,
+                currentStage == EnumLoadingStage.CreateClasses
+                    ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}"
+                    : "Mods Constructed");
 
             //Draw a bar
             var barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage == EnumLoadingStage.CreateClasses ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses : 1);
+            Widgets.FillableBar(barRect,
+                currentStage == EnumLoadingStage.CreateClasses
+                    ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses
+                    : 1);
 
             //------------------------Def XML Reading------------------------
             rect.y += 50;
@@ -417,7 +560,7 @@ namespace BetterLoading
             {
                 Widgets.Label(rect, "Spawning all things...");
                 barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-                Widgets.FillableBar(barRect,  (mapIndexSpawningItems + 1f) / (maps.Count + 1f));
+                Widgets.FillableBar(barRect, (mapIndexSpawningItems + 1f) / (maps.Count + 1f));
             }
             else
             {
@@ -455,7 +598,8 @@ namespace BetterLoading
                                     : "Rebuilding & Recalculating Pathfinding Map etc..."));
 
                     barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-                    Widgets.FillableBar(barRect, (float) (currentStage + 1 - EnumLoadingStage.SpawnThings_NonBuildings) / 5);
+                    Widgets.FillableBar(barRect,
+                        (float) (currentStage + 1 - EnumLoadingStage.SpawnThings_NonBuildings) / 5);
                 }
                 else
                 {
@@ -484,77 +628,6 @@ namespace BetterLoading
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
             Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.FinalizeLoad ? 0 : 1);
-        }
-
-        public void OnGUI()
-        {
-            if (!LongEventHandler.AnyEventNowOrWaiting)
-            {
-                shouldShow = false;
-            }
-
-            if (!shouldShow) return;
-            
-            List<LoadingStage>? currentList = null;
-            if (BootLoadList.Contains(_currentStage))
-                currentList = BootLoadList;
-
-            if (currentList == null)
-            {
-                Log.Error("BetterLoading: Current Load Stage is not in a load list!");
-                shouldShow = false;
-                return;
-            }
-            
-            var idx = currentList.IndexOf(_currentStage);
-            
-            //Handle cases where this stage is complete.
-            while (_currentStage.IsCompleted())
-            {
-                if (idx + 1 >= currentList.Count)
-                {
-                    Log.Message("BetterLoading: Finished processing load list, hiding.");
-                    shouldShow = false;
-                    return;
-                }
-
-                //Move to next stage
-                Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName());
-                _currentStage = currentList[idx + 1];
-                idx++;
-                Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
-            }
-
-            var currentProgress = _currentStage.GetCurrentProgress();
-            var maxProgress = _currentStage.GetCurrentProgress();
-            if (_currentStage.GetCurrentProgress() > _currentStage.GetMaximumProgress())
-            {
-                Log.Error($"BetterLoading: Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!", true);
-                currentProgress = maxProgress;
-            }
-
-            var pct = currentProgress / maxProgress;
-            
-            //Draw background
-            // UIMenuBackgroundManager.background.BackgroundOnGUI();
-            
-            //Draw the bar for current stage progress
-            var rect = new Rect(200, UI.screenHeight - 440, UI.screenWidth - 400, 40);
-            
-            Text.Anchor = TextAnchor.MiddleCenter;
-            Widgets.FillableBarLabeled(rect, pct, (int) rect.width, $"{currentProgress}/{maxProgress} ({Math.Round(pct * 100d)})");
-            Text.Anchor = TextAnchor.UpperLeft;
-            
-            //TODO: Draw label for it (either above or below, need to decide)
-            
-            //Draw the bar for current stage
-            rect = new Rect(200, UI.screenHeight - 240, UI.screenWidth - 400, 40);
-            
-            Text.Anchor = TextAnchor.MiddleCenter;
-            Widgets.FillableBarLabeled(rect, pct, (int) rect.width, $"{idx + 1}/{currentList.Count} ({Math.Round((idx + 1 / currentList.Count) * 100d)})");
-            Text.Anchor = TextAnchor.UpperLeft;
-            
-            //TODO: Again, draw the label for the current stage name somewhere around that bar.
         }
     }
 }

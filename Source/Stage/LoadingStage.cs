@@ -1,14 +1,23 @@
-﻿using Harmony;
+﻿using System;
+using System.Collections.Generic;
+using Harmony;
 
 namespace BetterLoading.Stage
 {
     public abstract class LoadingStage
     {
+        private static List<Type> _initializedStages = new List<Type>();
         /// <summary>
         /// Required public no-args constructor
         /// </summary>
         public LoadingStage(HarmonyInstance instance)
         {
+            if (!_initializedStages.Contains(GetType()))
+            {
+                // ReSharper disable once VirtualMemberCallInConstructor
+                DoPatching(instance);
+                _initializedStages.Add(GetType());
+            }
         }
 
         /// <summary>
@@ -37,6 +46,12 @@ namespace BetterLoading.Stage
         public abstract int GetMaximumProgress();
 
         /// <summary>
+        /// Run your harmony patches in here - it will only be called once per type.
+        /// </summary>
+        /// <param name="instance">A HarmonyInstance bound to BetterLoading</param>
+        public abstract void DoPatching(HarmonyInstance instance);
+
+        /// <summary>
         /// Returns whether or not this stage is complete (if it is, the loading screen will move to the next).
         /// The default implementation returns true if GetCurrentProgress returns (GetMaximumProcess + 1)
         /// </summary>
@@ -50,6 +65,13 @@ namespace BetterLoading.Stage
         /// Called when a stage becomes the active stage, to allow it to do late-stage initialization.
         /// </summary>
         public virtual void BecomeActive()
+        {
+        }
+        
+        /// <summary>
+        /// Called when a stage is no longer active (e.g. it finishes), to allow it to do cleanup.
+        /// </summary>
+        public virtual void BecomeInactive()
         {
         }
     }

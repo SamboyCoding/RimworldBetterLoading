@@ -6,13 +6,13 @@ namespace BetterLoading.Stage.InitialLoad
 {
     public class StageReadXML : LoadingStage
     {
-        private ModContentPack? _currentPack;
-        private int _currentPackIdx;
+        private static ModContentPack? _currentPack;
+        private static int _currentPackIdx = 1;
         private int _numPacks = -1;
 
         public StageReadXML(HarmonyInstance instance) : base(instance)
         {
-            instance.Patch(AccessTools.Method(typeof(ModContentPack), nameof(ModContentPack.LoadDefs)), new HarmonyMethod(typeof(StageReadXML), nameof(OnLoadDefs)));
+            
         }
 
         public override string GetStageName()
@@ -35,12 +35,17 @@ namespace BetterLoading.Stage.InitialLoad
             return _numPacks;
         }
 
+        public override void DoPatching(HarmonyInstance instance)
+        {
+            instance.Patch(AccessTools.Method(typeof(ModContentPack), nameof(ModContentPack.LoadDefs)), postfix: new HarmonyMethod(typeof(StageReadXML), nameof(OnLoadDefsComplete)));
+        }
+
         public override void BecomeActive()
         {
             _numPacks = LoadedModManager.RunningMods.Count();
         }
 
-        private void OnLoadDefs(ModContentPack __instance)
+        public static void OnLoadDefsComplete(ModContentPack __instance)
         {
             _currentPack = __instance;
             _currentPackIdx++;
