@@ -17,10 +17,9 @@ namespace BetterLoading.Stage.InitialLoad
         private static List<Type> _toRun;
         private static int _numRun;
 
-        private static bool _shouldCount;
         private static List<Action> _queue;
 
-        private static readonly object syncLock = new object();
+        private static readonly object SyncLock = new object();
         
         public StageRunStaticCctors(HarmonyInstance instance) : base(instance)
         {
@@ -59,7 +58,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public static IEnumerator StaticConstructAll()
         {
-            lock (syncLock)
+            lock (SyncLock)
             {
                 Application.runInBackground = true;
                 foreach (var type in _toRun)
@@ -121,23 +120,12 @@ namespace BetterLoading.Stage.InitialLoad
             //Called async so can just block
             Log.Message("[BetterLoading] Blocking LEH until static ctors finish");
             Thread.Sleep(1000);
-            lock (syncLock)
+            lock (SyncLock)
             {
                 //wait for sync lock to be available
                 Log.Message("[BetterLoading] Obtained sync lock, assuming we're finished blocking");
                 Thread.Sleep(0);
             }
         }
-
-        // public static void PreRunClassConstructor(RuntimeTypeHandle type)
-        // {
-        //     var typeImpl = Type.GetTypeFromHandle(type);
-        //     if (!typeImpl.TryGetAttribute(out StaticConstructorOnStartup _)) return;
-        //
-        //     _numRun++;
-        //     _modType = typeImpl;
-        //     
-        //     //TODO: Can we transpile CallAll to put some sort of pause in so we can actually see these bars
-        // }
     }
 }

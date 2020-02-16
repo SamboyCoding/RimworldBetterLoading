@@ -15,14 +15,14 @@ namespace BetterLoading
         /// <summary>
         /// The load list used at game boot.
         /// </summary>
-        public static List<LoadingStage> BootLoadList = new List<LoadingStage>
+        internal static List<LoadingStage> BootLoadList = new List<LoadingStage>
         {
             //For all of these stages, vanilla just shows "..."
             new StageInitMods(BetterLoadingMain.hInstance),
             new StageReadXML(BetterLoadingMain.hInstance),
             new StageUnifyXML(BetterLoadingMain.hInstance),
             new StageApplyPatches(BetterLoadingMain.hInstance),
-            new StageRegisterDef(BetterLoadingMain.hInstance),
+            new StageRegisterDefs(BetterLoadingMain.hInstance),
             new StageConstructDefs(BetterLoadingMain.hInstance),
             //Only NOW does it show "Loading Defs..."
             new StageResolveDefDatabases(BetterLoadingMain.hInstance),

@@ -5,12 +5,12 @@ using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
 {
-    public class StageRegisterDef : LoadingStage
+    public class StageRegisterDefs : LoadingStage
     {
         private static int _numDefsToRegister = 1;
         private static int _currentDefNum;
         
-        public StageRegisterDef(HarmonyInstance instance) : base(instance)
+        public StageRegisterDefs(HarmonyInstance instance) : base(instance)
         {
         }
 
@@ -47,8 +47,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(HarmonyInstance instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageRegisterDef), nameof(PreParseProcXml)));
-            instance.Patch(AccessTools.Method(typeof(XmlInheritance), nameof(XmlInheritance.TryRegister)), new HarmonyMethod(typeof(StageRegisterDef), nameof(PreRegisterDef)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreParseProcXml)));
+            instance.Patch(AccessTools.Method(typeof(XmlInheritance), nameof(XmlInheritance.TryRegister)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreRegisterDef)));
         }
 
         public static void PreParseProcXml(XmlDocument xmlDoc)

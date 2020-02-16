@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using BetterLoading.Compat;
+using BetterLoading.Compat.HugsLib;
 using Harmony;
 using UnityEngine;
 using Verse;
@@ -36,10 +38,13 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             _numMods = typeof(Mod).InstantiableDescendantsAndSelf().Select(m => m.FullName).Distinct().Count();
-            foreach (var type in typeof(Mod).InstantiableDescendantsAndSelf().Select(m => m.FullName).Distinct())
-            {
-                Debug.Log(type);
-            }
+        }
+
+        public override void BecomeInactive()
+        {
+            //Do compat here so classes are definitely 100% loaded
+            if(HugsLibCompat.ShouldBeLoaded())
+                HugsLibCompat.Load();
         }
 
         public override void DoPatching(HarmonyInstance instance)
