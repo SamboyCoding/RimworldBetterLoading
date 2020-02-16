@@ -39,16 +39,19 @@ namespace BetterLoading.Compat.HugsLib
             if (!_hasEnumeratedChildren)
                 return "Waiting for HugsLib child mod list (probably vanilla being slow again)";
 
-            if (_numChildrenInitialized < _children.Count)
-                return $"Initializing child mods: {_numChildrenInitialized} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
+            if (_currentChildMod != null)
+            {
+                if (_numChildrenInitialized < _children.Count)
+                    return $"Initializing child mods: {_numChildrenInitialized} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
 
-            if (_numChildrenCheckedForUpdate < _children.Count)
-                return $"Checking for mod updates: {_numChildrenCheckedForUpdate} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
+                if (_numChildrenCheckedForUpdate < _children.Count)
+                    return $"Checking for mod updates: {_numChildrenCheckedForUpdate} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
 
-            if (_numChildrenDefLoaded < _children.Count)
-                return $"Invoking post-load callbacks: {_numChildrenDefLoaded} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
+                if (_numChildrenDefLoaded < _children.Count)
+                    return $"Invoking post-load callbacks: {_numChildrenDefLoaded} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
+            }
 
-            return "Finishing up";
+            return _numChildrenDefLoaded == _children.Count ? "Finishing up" : null;
         }
 
         public override int GetCurrentProgress()
