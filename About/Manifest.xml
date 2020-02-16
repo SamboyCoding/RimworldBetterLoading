@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Manifest>
+    <identifier>BetterLoading</identifier>
+    <version>2.0.0.0</version>
+    <loadBefore>
+        <li>Core &gt;= 1.0</li>
+    </loadBefore>
+    <manifestUri>https://rawgit.com/SamboyCoding/RimworldBetterLoading/master/About/Manifest.xml</manifestUri>
+    <downloadUri>https://github.com/SamboyCoding/RimworldBetterLoading/releases/latest</downloadUri>
+</Manifest>
