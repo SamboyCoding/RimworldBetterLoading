@@ -5,6 +5,6 @@
     <loadBefore>
         <li>Core &gt;= 1.0</li>
     </loadBefore>
-    <manifestUri>https://rawgit.com/SamboyCoding/RimworldBetterLoading/master/About/Manifest.xml</manifestUri>
+    <manifestUri>https://raw.githubusercontent.com/SamboyCoding/RimworldBetterLoading/master/About/Manifest.xml</manifestUri>
     <downloadUri>https://github.com/SamboyCoding/RimworldBetterLoading/releases/latest</downloadUri>
 </Manifest>
