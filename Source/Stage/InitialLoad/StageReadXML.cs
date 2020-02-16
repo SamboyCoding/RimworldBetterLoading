@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using HarmonyLib;
+using Harmony;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -10,7 +10,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentPackIdx = 1;
         private int _numPacks = -1;
 
-        public StageReadXML(Harmony instance) : base(instance)
+        public StageReadXML(HarmonyInstance instance) : base(instance)
         {
             
         }
@@ -35,7 +35,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numPacks;
         }
 
-        public override void DoPatching(Harmony instance)
+        public override void DoPatching(HarmonyInstance instance)
         {
             instance.Patch(AccessTools.Method(typeof(ModContentPack), nameof(ModContentPack.LoadDefs)), postfix: new HarmonyMethod(typeof(StageReadXML), nameof(OnLoadDefsComplete)));
         }

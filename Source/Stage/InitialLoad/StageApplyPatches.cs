@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
+using Harmony;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -16,7 +16,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentPatch;
         private static bool _loadingPatches;
         
-        public StageApplyPatches(Harmony instance) : base(instance)
+        public StageApplyPatches(HarmonyInstance instance) : base(instance)
         {
             _modList = LoadedModManager.RunningMods.ToList();
         }
@@ -62,7 +62,7 @@ namespace BetterLoading.Stage.InitialLoad
             return GetCurrentProgress() == GetMaximumProgress() && _currentPatch >= _numPatches && !_loadingPatches;
         }
 
-        public override void DoPatching(Harmony instance)
+        public override void DoPatching(HarmonyInstance instance)
         {
             instance.Patch(AccessTools.Method(typeof(ModContentPack), "LoadPatches"), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreLoadPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostLoadPatches)));
 

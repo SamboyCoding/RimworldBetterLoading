@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using HarmonyLib;
+using Harmony;
+using RimWorld;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -11,26 +13,14 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numDatabases = 1;
         private static int _currentDatabaseNum;
 
-        private static bool _isActive;
 
-
-        public StageResolveDefDatabases(Harmony instance) : base(instance)
+        public StageResolveDefDatabases(HarmonyInstance instance) : base(instance)
         {
         }
 
         public override string GetStageName()
         {
-            return "Reloading Def Databases...";
-        }
-
-        public override void BecomeActive()
-        {
-            _isActive = true;
-        }
-
-        public override void BecomeInactive()
-        {
-            _isActive = false;
+            return "Reloading Def Databases";
         }
 
         public override string? GetCurrentStepName()
@@ -53,9 +43,14 @@ namespace BetterLoading.Stage.InitialLoad
             return _currentDatabaseNum == _numDatabases;
         }
 
-        public override void DoPatching(Harmony instance)
+        public override void DoPatching(HarmonyInstance instance)
         {
-            instance.Patch(AccessTools.Method(typeof(GenGeneric), "MethodOnGenericType", new[] {typeof(Type), typeof(Type), typeof(string)}), new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PreMOGT)));
+            instance.Patch(
+                AccessTools.Method(typeof(GenGeneric), "MethodOnGenericType", new[] {typeof(Type), typeof(Type), typeof(string)}),
+                new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PreMOGT)),
+                new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PostMOGT)));
+
+            instance.Patch(AccessTools.Method(typeof(DefGenerator), nameof(DefGenerator.GenerateImpliedDefs_PostResolve)), new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PreGenImplied)));
         }
 
         public static void PreMOGT(Type genericParam, string methodName)
@@ -65,9 +60,28 @@ namespace BetterLoading.Stage.InitialLoad
             if (methodName != nameof(DefDatabase<Def>.ResolveAllReferences)) return;
 
             if (_currentDatabase == null)
-                _numDatabases = typeof(Def).AllSubclasses().Count() - 1;
+                _numDatabases = typeof(Def).AllSubclasses().Count();
 
             _currentDatabase = genericParam;
+        }
+
+        public static void PostMOGT(Type genericParam, string methodName)
+        {
+            if (!typeof(Def).IsAssignableFrom(genericParam)) return;
+
+            if (methodName != nameof(DefDatabase<Def>.ResolveAllReferences)) return;
+
+            _currentDatabaseNum++;
+
+            if (_currentDatabaseNum == _numDatabases - 1)
+            {
+                _currentDatabase = typeof(ThingDef);
+            }
+        }
+
+        public static void PreGenImplied()
+        {
+            //Finished thingdef database at this point
             _currentDatabaseNum++;
         }
     }

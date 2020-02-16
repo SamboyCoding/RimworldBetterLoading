@@ -26,6 +26,8 @@ namespace BetterLoading
             new StageConstructDefs(BetterLoadingMain.hInstance),
             //Only NOW does it show "Loading Defs..."
             new StageResolveDefDatabases(BetterLoadingMain.hInstance),
+            //Now it shows "Initializing..."
+            new StageRunStaticCctors(BetterLoadingMain.hInstance),
             //TODO: move the rest of the stages to this format.
         };
 
@@ -86,6 +88,7 @@ namespace BetterLoading
         public LoadingScreen()
         {
             Instance = this;
+            _currentStage.BecomeActive();
         }
 
         private void Awake()
@@ -133,7 +136,7 @@ namespace BetterLoading
                     }
 
                     //Move to next stage
-                    Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName());
+                    Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName() + " at " + DateTime.Now.ToLongTimeString());
                     _currentStage.BecomeInactive();
                     
                     _currentStage = currentList[idx + 1];
@@ -171,7 +174,7 @@ namespace BetterLoading
                 if (subStageText != null)
                     currentStageText = $"{currentStageText} - {subStageText}";
 
-                Log.Message($"Rendering bar: Current stage is {currentStageText}, % is {pct * 100.0}", true);
+                // Log.Message($"Rendering bar: Current stage is {currentStageText}, % is {pct * 100.0}", true);
 
                 Text.Font = GameFont.Medium;
                 Text.Anchor = TextAnchor.MiddleCenter;

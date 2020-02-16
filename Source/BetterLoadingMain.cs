@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Xml;
-using HarmonyLib;
+using Harmony;
 using JetBrains.Annotations;
-using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -15,14 +11,14 @@ namespace BetterLoading
     public sealed class BetterLoadingMain : Mod
     {
         public static ModContentPack? ourContentPack;
-        public static Harmony? hInstance;
+        public static HarmonyInstance? hInstance;
         public static LoadingScreen? LoadingScreen;
         
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
             
-            hInstance = new Harmony("me.samboycoding.blm");
+            hInstance = HarmonyInstance.Create("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
             
             LogMsg("BetterLoading :: Init");
@@ -50,74 +46,7 @@ namespace BetterLoading
             Log.Message($"[{DateTime.Now}] {message}");
         }
 
-        #region Initial Game Load Patches
-
-
-        // [HarmonyPatch(typeof(GenGeneric))]
-        // [HarmonyPatch("MethodOnGenericType")]
-        // [HarmonyPatch(new[] {typeof(Type), typeof(Type), typeof(string)})]
-        // [UsedImplicitly]
-        // public class DefDatabaseReferencesPatch
-        // {
-        //     [UsedImplicitly]
-        //     public static void Prefix(Type genericParam, string methodName)
-        //     {
-        //         if ((LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage2 ||
-        //              LoadingScreen.Instance.currentStage == EnumLoadingStage.ResolveReferences)
-        //             && genericParam.IsSubclassOf(typeof(Def))
-        //             && methodName == "ResolveAllReferences")
-        //         {
-        //             LoadingScreen.Instance.currentDatabaseResolving = genericParam;
-        //             LoadingScreen.Instance.numDatabasesReloaded++;
-        //
-        //             if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ResolveReferences)
-        //             {
-        //                 LogMsg("Loading Screen Manager :: Resolve References :: Start");
-        //                 LoadingScreen.Instance.numDefDatabases =
-        //                     typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
-        //                 LoadingScreen.Instance.currentStage = EnumLoadingStage.ResolveReferences;
-        //             }
-        //         }
-        //     }
-        // }
-
-        [HarmonyPatch(typeof(StaticConstructorOnStartupUtility))]
-        [HarmonyPatch(nameof(StaticConstructorOnStartupUtility.CallAll))]
-        [UsedImplicitly]
-        public class FinishUpPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                LogMsg("Loading Screen Manager :: Call Static CCtors :: Start");
-                LoadingScreen.Instance.currentStage = EnumLoadingStage.FinishUp;
-                LoadingScreen.Instance.numStaticConstructorsToCall =
-                    GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().Count();
-            }
-        }
-
-        [HarmonyPatch(typeof(RuntimeHelpers))]
-        [HarmonyPatch(nameof(RuntimeHelpers.RunClassConstructor))]
-        [HarmonyPatch(new[] {typeof(RuntimeTypeHandle)})]
-        [UsedImplicitly]
-        public class RunClassConstructorPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(RuntimeTypeHandle type)
-            {
-                //This patch is really sketchy as it's more than possible that this could be called in a million and one places.
-                //Need to safeguard as much as is humanly possible.
-                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.FinishUp) return;
-                var typeImpl = Type.GetTypeFromHandle(type);
-                if (!typeImpl.TryGetAttribute(out StaticConstructorOnStartup _)) return;
-                //We are calling the constructor of a StaticConstructorOnStartup-Annotated class. In theory.
-                LoadingScreen.Instance.currentStaticConstructor = typeImpl;
-                LoadingScreen.Instance.numStaticConstructorsCalled++;
-            }
-        }
-
-        #endregion
-
+        //Following code kept as reference
         #region Save Game Loading Patches
 
         [HarmonyPatch(typeof(Game))]

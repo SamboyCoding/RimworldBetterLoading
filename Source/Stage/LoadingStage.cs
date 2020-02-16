@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using HarmonyLib;
+using Harmony;
 
 namespace BetterLoading.Stage
 {
@@ -10,7 +10,7 @@ namespace BetterLoading.Stage
         /// <summary>
         /// Required public no-args constructor
         /// </summary>
-        public LoadingStage(Harmony instance)
+        public LoadingStage(HarmonyInstance instance)
         {
             if (!_initializedStages.Contains(GetType()))
             {
@@ -48,8 +48,8 @@ namespace BetterLoading.Stage
         /// <summary>
         /// Run your harmony patches in here - it will only be called once per type.
         /// </summary>
-        /// <param name="instance">A Harmony bound to BetterLoading</param>
-        public abstract void DoPatching(Harmony instance);
+        /// <param name="instance">A HarmonyInstance bound to BetterLoading</param>
+        public abstract void DoPatching(HarmonyInstance instance);
 
         /// <summary>
         /// Returns whether or not this stage is complete (if it is, the loading screen will move to the next).
