@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using Harmony;
+using HarmonyLib;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -13,7 +13,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static ModContentPack currentMod = BetterLoadingMain.ourContentPack;
         private static bool _completed;
 
-        public StageInitMods(HarmonyInstance instance) : base(instance)
+        public StageInitMods(Harmony instance) : base(instance)
         {
             
         }
@@ -33,10 +33,9 @@ namespace BetterLoading.Stage.InitialLoad
             return currentModIdx;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(Activator), nameof(Activator.CreateInstance), new[] {typeof(Type), typeof(object[])}), new HarmonyMethod(typeof(StageInitMods), nameof(OnActivatorCreateInstance)));
-            Log.Message("finished patching aci");
         }
 
         public override bool IsCompleted()

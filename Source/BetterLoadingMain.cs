@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Xml;
-using Harmony;
+using HarmonyLib;
 using JetBrains.Annotations;
 using RimWorld;
 using RimWorld.Planet;
@@ -15,13 +15,14 @@ namespace BetterLoading
     public sealed class BetterLoadingMain : Mod
     {
         public static ModContentPack? ourContentPack;
-        public static HarmonyInstance? Harmony;
+        public static Harmony? hInstance;
         public static LoadingScreen? LoadingScreen;
         
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
-            Harmony = HarmonyInstance.Create("me.samboycoding.blm");
+            
+            hInstance = new Harmony("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
             
             LogMsg("BetterLoading :: Init");
@@ -31,7 +32,7 @@ namespace BetterLoading
             LoadingScreen.Instance.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
             LoadingScreen.Instance.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
 
-            Harmony.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
+            hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
                 new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -51,141 +52,34 @@ namespace BetterLoading
 
         #region Initial Game Load Patches
 
-        [HarmonyPatch(typeof(LoadedModManager))]
-        [HarmonyPatch(nameof(LoadedModManager.CombineIntoUnifiedXML))]
-        [UsedImplicitly]
-        public class CombineXmlPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ReadXMLFiles) return;
-                LogMsg("Loading Screen Manager :: Unify XML Tree :: Start");
-                LoadingScreen.Instance.currentStage = EnumLoadingStage.UnifyXML;
-            }
-        }
 
-        [HarmonyPatch(typeof(LoadedModManager))]
-        [HarmonyPatch(nameof(LoadedModManager.ApplyPatches))]
-        [UsedImplicitly]
-        public class ApplyPatchesPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.UnifyXML) return;
-                
-                LogMsg("Loading Screen Manager :: Apply XML Patches :: Start");
-                LoadingScreen.Instance.numPatchesToLoad = LoadedModManager.RunningMods.Count();
-                LoadingScreen.Instance.currentStage = EnumLoadingStage.ApplyPatches;
-            }
-        }
-
-        [HarmonyPatch(typeof(ModContentPack))]
-        [HarmonyPatch("LoadPatches")]
-        [UsedImplicitly]
-        public class GetPatchesPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(ModContentPack __instance)
-            {
-                LoadingScreen.Instance.currentlyPatching = __instance;
-                LoadingScreen.Instance.numPatchesLoaded++;
-            }
-        }
-
-        [HarmonyPatch(typeof(LoadedModManager))]
-        [HarmonyPatch(nameof(LoadedModManager.ParseAndProcessXML))]
-        [UsedImplicitly]
-        public class PAndPXmlPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(XmlDocument xmlDoc)
-            {
-                if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ApplyPatches) return;
-                
-                LogMsg("Loading Screen Manager :: Pre-Parse XML Tree :: Start");
-                LoadingScreen.Instance.numDefsToProcess = xmlDoc.DocumentElement?.ChildNodes.Count ?? -1;
-
-                LoadingScreen.Instance.numDefsToPreProcess = 0;
-                var enumerator = xmlDoc.DocumentElement?.ChildNodes.GetEnumerator();
-                while (enumerator?.MoveNext() ?? false)
-                {
-                    if (((XmlNode) enumerator.Current)?.NodeType == XmlNodeType.Element) LoadingScreen.Instance.numDefsToPreProcess++;
-                }
-
-                LoadingScreen.Instance.currentStage = EnumLoadingStage.ParseProcessXMLStage1;
-            }
-        }
-
-        [HarmonyPatch(typeof(XmlInheritance))]
-        [HarmonyPatch(nameof(XmlInheritance.TryRegister))]
-        [UsedImplicitly]
-        public class TryRegisterInheritancePatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage1)
-                    LoadingScreen.Instance.numDefsPreProcessed++;
-            }
-        }
-
-        [HarmonyPatch(typeof(XmlInheritance))]
-        [HarmonyPatch(nameof(XmlInheritance.Resolve))]
-        [UsedImplicitly]
-        public class ResolveInheritancePatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                if (LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage1)
-                {
-                    LogMsg("Loading Screen Manager :: Process XML Tree :: Start");
-                    LoadingScreen.Instance.currentStage = EnumLoadingStage.ParseProcessXMLStage2;
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(DirectXmlLoader))]
-        [HarmonyPatch(nameof(DirectXmlLoader.DefFromNode))]
-        [UsedImplicitly]
-        public class DefFromNodePatch
-        {
-            [UsedImplicitly]
-            public static void Prefix()
-            {
-                LoadingScreen.Instance.numDefsProcessed++;
-            }
-        }
-
-        [HarmonyPatch(typeof(GenGeneric))]
-        [HarmonyPatch("MethodOnGenericType")]
-        [HarmonyPatch(new[] {typeof(Type), typeof(Type), typeof(string)})]
-        [UsedImplicitly]
-        public class DefDatabaseReferencesPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(Type genericParam, string methodName)
-            {
-                if ((LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage2 ||
-                     LoadingScreen.Instance.currentStage == EnumLoadingStage.ResolveReferences)
-                    && genericParam.IsSubclassOf(typeof(Def))
-                    && methodName == "ResolveAllReferences")
-                {
-                    LoadingScreen.Instance.currentDatabaseResolving = genericParam;
-                    LoadingScreen.Instance.numDatabasesReloaded++;
-
-                    if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ResolveReferences)
-                    {
-                        LogMsg("Loading Screen Manager :: Resolve References :: Start");
-                        LoadingScreen.Instance.numDefDatabases =
-                            typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
-                        LoadingScreen.Instance.currentStage = EnumLoadingStage.ResolveReferences;
-                    }
-                }
-            }
-        }
+        // [HarmonyPatch(typeof(GenGeneric))]
+        // [HarmonyPatch("MethodOnGenericType")]
+        // [HarmonyPatch(new[] {typeof(Type), typeof(Type), typeof(string)})]
+        // [UsedImplicitly]
+        // public class DefDatabaseReferencesPatch
+        // {
+        //     [UsedImplicitly]
+        //     public static void Prefix(Type genericParam, string methodName)
+        //     {
+        //         if ((LoadingScreen.Instance.currentStage == EnumLoadingStage.ParseProcessXMLStage2 ||
+        //              LoadingScreen.Instance.currentStage == EnumLoadingStage.ResolveReferences)
+        //             && genericParam.IsSubclassOf(typeof(Def))
+        //             && methodName == "ResolveAllReferences")
+        //         {
+        //             LoadingScreen.Instance.currentDatabaseResolving = genericParam;
+        //             LoadingScreen.Instance.numDatabasesReloaded++;
+        //
+        //             if (LoadingScreen.Instance.currentStage != EnumLoadingStage.ResolveReferences)
+        //             {
+        //                 LogMsg("Loading Screen Manager :: Resolve References :: Start");
+        //                 LoadingScreen.Instance.numDefDatabases =
+        //                     typeof(Def).AllSubclasses().Count() - 1; //-1 because Def subclasses Def. Or something.
+        //                 LoadingScreen.Instance.currentStage = EnumLoadingStage.ResolveReferences;
+        //             }
+        //         }
+        //     }
+        // }
 
         [HarmonyPatch(typeof(StaticConstructorOnStartupUtility))]
         [HarmonyPatch(nameof(StaticConstructorOnStartupUtility.CallAll))]

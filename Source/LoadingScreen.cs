@@ -17,10 +17,15 @@ namespace BetterLoading
         /// </summary>
         public static List<LoadingStage> BootLoadList = new List<LoadingStage>
         {
-            new StageInitMods(BetterLoadingMain.Harmony),
-            new StageReadXML(BetterLoadingMain.Harmony),
-            new StageUnifyXML(BetterLoadingMain.Harmony),
-            new StageApplyPatches(BetterLoadingMain.Harmony)
+            //For all of these stages, vanilla just shows "..."
+            new StageInitMods(BetterLoadingMain.hInstance),
+            new StageReadXML(BetterLoadingMain.hInstance),
+            new StageUnifyXML(BetterLoadingMain.hInstance),
+            new StageApplyPatches(BetterLoadingMain.hInstance),
+            new StageRegisterDef(BetterLoadingMain.hInstance),
+            new StageConstructDefs(BetterLoadingMain.hInstance),
+            //Only NOW does it show "Loading Defs..."
+            new StageResolveDefDatabases(BetterLoadingMain.hInstance),
             //TODO: move the rest of the stages to this format.
         };
 
@@ -140,18 +145,19 @@ namespace BetterLoading
 
                 var currentProgress = _currentStage.GetCurrentProgress();
                 var maxProgress = _currentStage.GetMaximumProgress();
+                
+                if (maxProgress == 0)
+                {
+                    Log.Warning($"BetterLoading :: Stage {_currentStage.GetType().FullName} returned maxProgress = 0");
+                    maxProgress = 1;
+                }
+                
                 if (currentProgress > maxProgress)
                 {
                     Log.Error(
                         $"BetterLoading: Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!",
                         true);
                     currentProgress = maxProgress;
-                }
-
-                if (maxProgress == 0)
-                {
-                    Log.Warning($"BetterLoading :: Stage {_currentStage.GetType().FullName} returned maxProgress = 0");
-                    maxProgress = 1;
                 }
 
                 //Draw black background

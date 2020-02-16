@@ -1,8 +1,10 @@
 
-Assemblies/BetterLoading\.dll
+Assemblies/*.dll
 
 *.pdb
 
 Source/obj/
 
 Source/\.idea/
+
+Source/packages/

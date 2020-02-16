@@ -34,8 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="0Harmony, Version=1.2.0.1, Culture=neutral, PublicKeyToken=null">
-      <HintPath>Deps\0Harmony.dll</HintPath>
+    <Reference Include="0Harmony, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>packages\Lib.Harmony.2.0.0\lib\net35\0Harmony.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Assembly-CSharp, Version=1.0.7213.22423, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
@@ -56,10 +57,17 @@
     <Compile Include="EnumLoadingStage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Stage\InitialLoad\StageApplyPatches.cs" />
+    <Compile Include="Stage\InitialLoad\StageConstructDefs.cs" />
     <Compile Include="Stage\InitialLoad\StageInitMods.cs" />
     <Compile Include="Stage\InitialLoad\StageReadXML.cs" />
+    <Compile Include="Stage\InitialLoad\StageRegisterDef.cs" />
+    <Compile Include="Stage\InitialLoad\StageResolveDefDatabases.cs" />
     <Compile Include="Stage\InitialLoad\StageUnifyXML.cs" />
     <Compile Include="Stage\LoadingStage.cs" />
+    <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
