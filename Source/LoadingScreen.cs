@@ -163,8 +163,8 @@ namespace BetterLoading
                     currentProgress = maxProgress;
                 }
 
-                //Draw black background
-                var bgRect = new Rect(0, 0, UI.screenWidth, UI.screenHeight);
+                //Draw background
+                var bgRect = new Rect(0, 0, Screen.width, Screen.height);
                 GUI.DrawTexture(bgRect, background);
                 
                 var pct = currentProgress / (float) maxProgress;
@@ -179,7 +179,7 @@ namespace BetterLoading
                 Text.Font = GameFont.Medium;
                 Text.Anchor = TextAnchor.MiddleCenter;
 
-                var titleRect = new Rect(200, 200, UI.screenWidth - 400, 40);
+                var titleRect = new Rect(200, 200, Screen.width - 400, 40);
                 Widgets.Label(titleRect, "Initializing Game...");
 
                 Text.Font = GameFont.Small;
@@ -188,7 +188,7 @@ namespace BetterLoading
                 // UIMenuBackgroundManager.background.BackgroundOnGUI();
 
                 //Draw the bar for current stage progress
-                var rect = new Rect(200, UI.screenHeight - 440, UI.screenWidth - 400, 40);
+                var rect = new Rect(200, Screen.height - 440, Screen.width - 400, 40);
 
                 Widgets.FillableBar(rect, pct);
                 Widgets.Label(rect, $"{currentProgress}/{maxProgress} ({pct.ToStringPercent()})");
@@ -198,7 +198,7 @@ namespace BetterLoading
                 Widgets.Label(rect, currentStageText);
 
                 //Draw the bar for current stage
-                rect = new Rect(200, UI.screenHeight - 240, UI.screenWidth - 400, 40);
+                rect = new Rect(200, Screen.height - 240, Screen.width - 400, 40);
 
                 Text.Anchor = TextAnchor.MiddleCenter;
                 
@@ -215,155 +215,10 @@ namespace BetterLoading
             }
         }
 
-        private void DrawInitialGameLoad()
-        {
-            //In terms of stages, we have:
-            //
-            //Initialize mods - this just verifies files exist etc and is pre-instantiation so cannot be shown
-            //
-            //Load mod content - this loads assemblies and schedules the load of audio clips, textures, and strings. Again, pre-instantiation.
-            //
-            //Create mod classes (that's where this gets setup, so it's unlikely that we'll be able to display this fully/at all)
-            //
-            //Loading of xml files in defs folder (LoadedModManager#LoadModXML) - can be displayed as a progress bar
-            //
-            //XML Unification (LoadedModManager#CombineIntoUnifiedXML) - may be doable as a progress bar, may just be easier to show it's being done
-            //
-            //Patch application. Loaded per mod in ModContentPack#LoadPatches and then applied in blocks (a mod at a time) by PatchOperation#Apply (but this is overridden, so... does harmony work?)
-            //    This runs as Load Mod Patches -> Apply one at a time -> load next mod -> apply -> etc
-            //
-            //Parse + Process XML. Two time consuming stages:
-            //    - Register all inheritence nodes (XMLInheritence#TryRegister for each xmlDoc.DocumentElement.ChildNodes in param for LoadedModManager#ParseAndProcessXML)
-            //    - Addition of Defs - DirectXmlLoader#DefFromNode for each def followed OPTIONALLY by DefPackage#AddDef if it loads (which not all of even the vanilla ones do).
-            //
-            //Freeing of memory (probably don't need to show) via LoadedModManager#ClearCachedPatches and XmlInheritance#Clear
-
-            //Draw window
-            var rect = new Rect(100, 100, UI.screenWidth - 200, UI.screenHeight - 200);
-            rect = rect.Rounded();
-            UIMenuBackgroundManager.background.BackgroundOnGUI();
-            Widgets.DrawShadowAround(rect);
-            Widgets.DrawWindowBackground(rect);
-
-            Text.Font = GameFont.Medium;
-            Text.Anchor = TextAnchor.UpperCenter;
-
-            rect.y += 20; //Nudge down for title
-
-            Widgets.Label(rect, "BetterLoading :: Game Loading, Please Wait...");
-
-            Text.Font = GameFont.Small;
-            Text.Anchor = TextAnchor.UpperLeft;
-
-            rect.x += 20; //Indent
-            rect.width -= 20;
-
-            //------------------------Mod Construction------------------------
-            rect.y += 50; //Move down a bit
-            Widgets.Label(rect,
-                currentStage == EnumLoadingStage.CreateClasses
-                    ? $"Constructing Mods ({currentModClassBeingInstantiated}/{numModClasses}): {modBeingInstantiatedName}"
-                    : "Mods Constructed");
-
-            //Draw a bar
-            var barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                currentStage == EnumLoadingStage.CreateClasses
-                    ? numModClasses == 0 ? 0 : (float) currentModClassBeingInstantiated / numModClasses
-                    : 1);
-
-            //------------------------Def XML Reading------------------------
-            rect.y += 50;
-            Widgets.Label(rect,
-                $"Reading Def XML ({numContentPacksLoaded}/{(totalLoadedContentPacks == 0 ? "<waiting>" : "" + totalLoadedContentPacks)}): {(currentlyLoadingDefsFrom != null && currentlyLoadingDefsFrom.Name.Length > 0 ? currentlyLoadingDefsFrom.Name : "Waiting...")}");
-
-            //Draw a bar
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                totalLoadedContentPacks == 0 ? 0 : (float) numContentPacksLoaded / totalLoadedContentPacks);
-
-            //------------------------XML Unification------------------------
-            rect.y += 50;
-            Widgets.Label(rect,
-                currentStage < EnumLoadingStage.UnifyXML ? "Waiting for XML Load To Complete..." :
-                currentStage == EnumLoadingStage.UnifyXML ? "Building Def Tree" : "Finished Building Def Tree");
-
-            //Draw a bar
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.UnifyXML ? 0 : 1);
-
-            //------------------------Patch Application------------------------
-            rect.y += 50;
-            Widgets.Label(rect,
-                currentStage < EnumLoadingStage.ApplyPatches
-                    ? "Waiting for XML Tree..."
-                    : currentStage == EnumLoadingStage.ApplyPatches
-                        ? $"Applying mod patches ({numPatchesLoaded}/{numPatchesToLoad}): {(currentlyPatching == null ? "<waiting>" : currentlyPatching.Name)}"
-                        : "Patches Applied");
-
-            //Draw a bar
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                currentStage < EnumLoadingStage.ApplyPatches ? 0 : numPatchesLoaded / (float) numPatchesToLoad);
-
-            //------------------------XML Parse/Process Stage 1------------------------
-            rect.y += 50;
-            Widgets.Label(rect, currentStage < EnumLoadingStage.ParseProcessXMLStage1
-                ? "Waiting for patches to be applied..."
-                : currentStage == EnumLoadingStage.ParseProcessXMLStage1
-                    ? $"Registering Defs from Patched XML: {numDefsPreProcessed}/{numDefsToPreProcess} ({((float) numDefsPreProcessed / numDefsToPreProcess).ToStringPercent()})"
-                    : "Defs Registered");
-
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                numDefsToPreProcess == 0 ? 0 : (float) numDefsPreProcessed / numDefsToPreProcess);
-
-            //------------------------XML Parse/Process Stage 2------------------------
-            rect.y += 50;
-            Widgets.Label(rect, currentStage < EnumLoadingStage.ParseProcessXMLStage2
-                ? "Waiting for defs to be registered..."
-                : currentStage == EnumLoadingStage.ParseProcessXMLStage2
-                    ? $"Creating Defs from Patched XML: {numDefsProcessed}/{numDefsToProcess} ({((float) numDefsProcessed / numDefsToProcess).ToStringPercent()})"
-                    : "Defs Created");
-
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                numDefsToProcess == 0 ? 0 : (float) numDefsProcessed / numDefsToProcess);
-
-            //------------------------Reference Resolving------------------------
-            rect.y += 50;
-            Widgets.Label(rect, currentStage < EnumLoadingStage.ResolveReferences
-                ? "Waiting for defs to be created..."
-                : currentStage == EnumLoadingStage.ResolveReferences
-                    ? $"Reloading DefDatabase: {currentDatabaseResolving.Name} ({numDatabasesReloaded}/{numDefDatabases})"
-                    : "Databases Reloaded");
-
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                numDefDatabases == 0 ? 0 : (float) numDatabasesReloaded / numDefDatabases);
-
-            //------------------------Finishing Up------------------------
-            rect.y += 50;
-            Widgets.Label(rect,
-                currentStage < EnumLoadingStage.FinishUp
-                    ? "Waiting for databases to finish reload..."
-                    : currentStage == EnumLoadingStage.FinishUp
-                        ? $"Running Startup Static CCtors: {currentStaticConstructor?.FullName} ({numStaticConstructorsCalled}/{numStaticConstructorsToCall})"
-                        : "Finished");
-
-            barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
-            Widgets.FillableBar(barRect,
-                numStaticConstructorsToCall == 0
-                    ? 0
-                    : (float) numStaticConstructorsCalled / numStaticConstructorsToCall);
-
-            Text.Anchor = TextAnchor.UpperLeft; //Reset this
-        }
-
         private void DrawSaveFileLoad()
         {
             //Draw window
-            var rect = new Rect(100, 100, UI.screenWidth - 200, UI.screenHeight - 200);
+            var rect = new Rect(100, 100, Screen.width - 200, Screen.height - 200);
             rect = rect.Rounded();
             UIMenuBackgroundManager.background.BackgroundOnGUI();
             Widgets.DrawShadowAround(rect);
