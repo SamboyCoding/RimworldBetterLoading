@@ -74,9 +74,29 @@ namespace BetterLoading.Stage.InitialLoad
 
                 Application.runInBackground = Prefs.RunInBackground;
 
-                Log.Message("Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ". AND I didn't make the game freeze. Take that, Tynan.");
+                Log.Message("[BetterLoading] Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ". AND I didn't make the game freeze. Take that, Tynan.");
                 var field = typeof(LongEventHandler).GetField("toExecuteWhenFinished", BindingFlags.NonPublic | BindingFlags.Static);
-                field.SetValue(null, _queue);
+
+                var existing = field.GetValue(null) as List<Action>;
+
+                Log.Message($"[BetterLoading] Restoring original job queue of {_queue.Count} item/s and merging with any just added (looking at you, Fluffy) ({existing.Count} entries have been added).");
+                if (existing.Count > 0 && _queue.Count == 0)
+                {
+                    //This is probably usually the case
+                    //Don't touch anything
+                } else if (existing.Count == 0 && _queue.Count > 0)
+                {
+                    //Load cached stuff from queue
+                    field.SetValue(null, _queue);
+                }
+                else
+                {
+                    //Need to merge - queue first
+                    var result = _queue;
+                    result.AddRange(existing);
+                    field.SetValue(null, result);
+                }
+                
                 _queue = null;
 
                 StaticConstructorOnStartupUtility.coreStaticAssetsLoaded = true;
@@ -95,10 +115,10 @@ namespace BetterLoading.Stage.InitialLoad
             Log.Message("[BetterLoading] Overriding LongEventHandler's toExecuteWhenFinished");
             var field = typeof(LongEventHandler).GetField("toExecuteWhenFinished", BindingFlags.NonPublic | BindingFlags.Static);
             var result = (List<Action>) field.GetValue(null);
-            
+
             
             Log.Message($"[BetterLoading]    Got list of pending actions: {result}. Removing up to and including the static constructor call...");
-
+            
             var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.Name == "PlayDataLoader" && i.Method.Name.Contains("m__2"));
             
             Log.Message($"[BetterLoading]        (Which is at index {staticCallIdx} of {result.Count})");
