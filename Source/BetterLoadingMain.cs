@@ -32,7 +32,6 @@ namespace BetterLoading
                 new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
-            Log.Message("Ctor finished");
         }
 
         public static bool DisableVanillaLoadScreen()

@@ -62,6 +62,7 @@
     <Compile Include="Compat\HugsLib\StageHugsLibInit.cs" />
     <Compile Include="LoadingScreen.cs" />
     <Compile Include="EnumLoadingStage.cs" />
+    <Compile Include="LongEventHandlerMirror.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Stage\InitialLoad\3StageApplyPatches.cs" />
     <Compile Include="Stage\InitialLoad\5StageConstructDefs.cs" />
@@ -69,9 +70,12 @@
     <Compile Include="Stage\InitialLoad\1StageReadXML.cs" />
     <Compile Include="Stage\InitialLoad\4StageRegisterDefs.cs" />
     <Compile Include="Stage\InitialLoad\6StageResolveDefDatabases.cs" />
-    <Compile Include="Stage\InitialLoad\7StageRunStaticCctors.cs" />
+    <Compile Include="Stage\InitialLoad\8StageRunStaticCctors.cs" />
     <Compile Include="Stage\InitialLoad\2StageUnifyXML.cs" />
+    <Compile Include="Stage\InitialLoad\7StageRunPostLoadPreFinalizeCallbacks.cs" />
+    <Compile Include="Stage\InitialLoad\9StageRunPostFinalizeCallbacks.cs" />
     <Compile Include="Stage\LoadingStage.cs" />
+    <Compile Include="ToExecuteWhenFinishedHandler.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>

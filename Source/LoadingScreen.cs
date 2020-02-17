@@ -27,7 +27,9 @@ namespace BetterLoading
             //Only NOW does it show "Loading Defs..."
             new StageResolveDefDatabases(BetterLoadingMain.hInstance),
             //Now it shows "Initializing..."
+            new StageRunPostLoadPreFinalizeCallbacks(BetterLoadingMain.hInstance),
             new StageRunStaticCctors(BetterLoadingMain.hInstance),
+            new StageRunPostFinalizeCallbacks(BetterLoadingMain.hInstance)
             //TODO: move the rest of the stages to this format.
         };
 

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -34,6 +35,11 @@ namespace BetterLoading.Compat.HugsLib
             return "Initializing HugsLib";
         }
 
+        public override void BecomeActive()
+        {
+            Log.Message($"At becomeActive, toexecutewhenfinished has {LongEventHandlerMirror.ToExecuteWhenFinished.Count} items and eventqueue has {LongEventHandlerMirror.EventQueue.Count} items ");
+        }
+
         public override string? GetCurrentStepName()
         {
             if (!_hasEnumeratedChildren)
@@ -63,7 +69,7 @@ namespace BetterLoading.Compat.HugsLib
             result += _numChildrenDefLoaded;
             result += _done ? 1 : 0;
 
-            return result;
+            return Math.Min(result, GetMaximumProgress());
         }
 
         public override int GetMaximumProgress()
@@ -130,7 +136,7 @@ namespace BetterLoading.Compat.HugsLib
 
         public static void PreUpdateCheck(string modId)
         {
-            _currentChildMod = _children.Find(m => (string) _modIdentifierProperty.GetValue(m, null) == modId);
+            _currentChildMod = _children?.Find(m => (string) _modIdentifierProperty.GetValue(m, null) == modId);
         }
 
         public static void PostUpdateCheck()

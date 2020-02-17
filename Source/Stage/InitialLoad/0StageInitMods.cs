@@ -70,7 +70,7 @@ namespace BetterLoading.Stage.InitialLoad
             if (args.Length != 1 || !(args[0] is ModContentPack) && args[0] != null) return; //Check the constructor we're using matches the required pattern.
 
             var pack = (ModContentPack) args[0];
-            Log.Message($"[BetterLoading] Class {type?.FullName} is being created for mod {pack}");
+            // Log.Message($"[BetterLoading] Class {type?.FullName} is being created for mod {pack}");
 
             _currentModIdx++;
             _currentMod = pack;
