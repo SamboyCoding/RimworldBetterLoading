@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using BetterLoading.Stage;
-using Harmony;
+using HarmonyLib;
 using HugsLib;
 using HugsLib.News;
 using Verse;
@@ -22,11 +22,11 @@ namespace BetterLoading.Compat.HugsLib
         private static int _numChildrenDefLoaded;
 
         private static object _currentChildMod;
-        private static HarmonyInstance hInstance;
+        private static Harmony hInstance;
 
         private static PropertyInfo _modIdentifierProperty;
 
-        public StageHugsLibInit(HarmonyInstance instance) : base(instance)
+        public StageHugsLibInit(Harmony instance) : base(instance)
         {
         }
 
@@ -79,7 +79,7 @@ namespace BetterLoading.Compat.HugsLib
             return 1 + childCount + childCount + childCount;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             hInstance = instance;
 

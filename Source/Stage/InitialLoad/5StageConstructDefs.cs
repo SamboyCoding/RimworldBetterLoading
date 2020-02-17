@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Xml;
-using Harmony;
+using HarmonyLib;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -12,7 +12,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static bool _shouldCount;
         private static LoadableXmlAsset _asset;
         
-        public StageConstructDefs(HarmonyInstance instance) : base(instance)
+        public StageConstructDefs(Harmony instance) : base(instance)
         {
         }
 
@@ -53,7 +53,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numDefsToResolve;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml)));
             instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreDefFromNode)));

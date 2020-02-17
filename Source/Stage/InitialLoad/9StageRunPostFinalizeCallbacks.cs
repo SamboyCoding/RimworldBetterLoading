@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Harmony;
+using HarmonyLib;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -19,7 +19,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         private static bool _finishedExecuting;
 
-        public StageRunPostFinalizeCallbacks(HarmonyInstance instance) : base(instance)
+        public StageRunPostFinalizeCallbacks(Harmony instance) : base(instance)
         {
         }
 
@@ -51,7 +51,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numTasksToRun;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
         }
