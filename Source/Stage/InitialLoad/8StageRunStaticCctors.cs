@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 using Verse;
 
@@ -20,7 +20,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         private static bool _finishedProcessing;
 
-        public StageRunStaticCctors(HarmonyInstance instance) : base(instance)
+        public StageRunStaticCctors(Harmony instance) : base(instance)
         {
         }
 
@@ -49,7 +49,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numRun == _toRun?.Count;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreCallAll)));
             // instance.Patch(AccessTools.Method(typeof(RuntimeHelpers), nameof(RuntimeHelpers.RunClassConstructor), new []{typeof(RuntimeTypeHandle)}), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreRunClassConstructor)));

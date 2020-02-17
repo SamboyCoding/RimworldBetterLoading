@@ -2,10 +2,14 @@
 <ModMetaData>
     <name>BetterLoading</name>
     <author>Samboy063</author>
+    <packageId>me.samboycoding.betterloading</packageId>
     <url></url>
     <supportedVersions>
-        <li>1.0</li>
-    </supportedVersions>
+      <li>1.0</li>
+   </supportedVersions>
+    <supportedGameVersions>
+        <li>1.1</li>
+    </supportedGameVersions>
     <description>An enhanced loading screen.</description>
 
 </ModMetaData>
