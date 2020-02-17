@@ -3,7 +3,7 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Harmony;
+using HarmonyLib;
 using JetBrains.Annotations;
 using RimWorld.Planet;
 using UnityEngine;
@@ -14,7 +14,7 @@ namespace BetterLoading
     public sealed class BetterLoadingMain : Mod
     {
         public static ModContentPack? ourContentPack;
-        public static HarmonyInstance? hInstance;
+        public static Harmony? hInstance;
         public static LoadingScreen? LoadingScreen;
 
         public static Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new Dictionary<ModContentPack, List<DllLoadError>>();
@@ -28,8 +28,8 @@ namespace BetterLoading
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
-
-            hInstance = HarmonyInstance.Create("me.samboycoding.blm");
+            
+            hInstance = new Harmony("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
 
             LogMsg("[BetterLoading] Verifying all mods loaded properly...");

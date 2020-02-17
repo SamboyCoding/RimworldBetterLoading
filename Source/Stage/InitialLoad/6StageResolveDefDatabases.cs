@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Harmony;
+using HarmonyLib;
 using RimWorld;
 using Verse;
 
@@ -14,7 +14,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentDatabaseNum;
 
 
-        public StageResolveDefDatabases(HarmonyInstance instance) : base(instance)
+        public StageResolveDefDatabases(Harmony instance) : base(instance)
         {
         }
 
@@ -43,7 +43,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _currentDatabaseNum == _numDatabases;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(
                 AccessTools.Method(typeof(GenGeneric), "MethodOnGenericType", new[] {typeof(Type), typeof(Type), typeof(string)}),
@@ -60,7 +60,7 @@ namespace BetterLoading.Stage.InitialLoad
             if (methodName != nameof(DefDatabase<Def>.ResolveAllReferences)) return;
 
             if (_currentDatabase == null)
-                _numDatabases = typeof(Def).AllSubclasses().Count();
+                _numDatabases = typeof(Def).AllSubclasses().Count() - 2; //ThingCategoryDef and RecipeDef aren't done
 
             _currentDatabase = genericParam;
         }
@@ -73,7 +73,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             _currentDatabaseNum++;
 
-            if (_currentDatabaseNum == _numDatabases - 1)
+            if (_currentDatabaseNum == _numDatabases - 3)
             {
                 _currentDatabase = typeof(ThingDef);
             }

@@ -2,7 +2,7 @@
 using System.Linq;
 using BetterLoading.Compat;
 using BetterLoading.Compat.HugsLib;
-using Harmony;
+using HarmonyLib;
 using UnityEngine;
 using Verse;
 
@@ -16,7 +16,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static ModContentPack _currentMod = BetterLoadingMain.ourContentPack;
         private static bool _completed;
 
-        public StageInitMods(HarmonyInstance instance) : base(instance)
+        public StageInitMods(Harmony instance) : base(instance)
         {
         }
 
@@ -47,7 +47,7 @@ namespace BetterLoading.Stage.InitialLoad
                 HugsLibCompat.Load();
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(Activator), nameof(Activator.CreateInstance), new[] {typeof(Type), typeof(object[])}), new HarmonyMethod(typeof(StageInitMods), nameof(OnActivatorCreateInstance)));
         }

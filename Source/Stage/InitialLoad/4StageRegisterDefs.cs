@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Xml;
-using Harmony;
+using HarmonyLib;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -10,7 +10,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numDefsToRegister = 1;
         private static int _currentDefNum;
         
-        public StageRegisterDefs(HarmonyInstance instance) : base(instance)
+        public StageRegisterDefs(Harmony instance) : base(instance)
         {
         }
 
@@ -45,7 +45,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numDefsToRegister;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreParseProcXml)));
             instance.Patch(AccessTools.Method(typeof(XmlInheritance), nameof(XmlInheritance.TryRegister)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreRegisterDef)));

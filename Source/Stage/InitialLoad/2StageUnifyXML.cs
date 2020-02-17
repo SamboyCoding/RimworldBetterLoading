@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Xml;
-using Harmony;
+using HarmonyLib;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -13,7 +13,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentAssetNo = 0;
         private static bool _valid;
         
-        public StageUnifyXML(HarmonyInstance instance) : base(instance)
+        public StageUnifyXML(Harmony instance) : base(instance)
         {
         }
 
@@ -43,7 +43,7 @@ namespace BetterLoading.Stage.InitialLoad
             return _numAssets;
         }
 
-        public override void DoPatching(HarmonyInstance instance)
+        public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.CombineIntoUnifiedXML)),
                 new HarmonyMethod(typeof(StageUnifyXML), nameof(PreUnifyXML)));
