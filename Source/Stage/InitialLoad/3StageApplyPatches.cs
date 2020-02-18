@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Harmony;
 using Verse;
@@ -9,13 +8,13 @@ namespace BetterLoading.Stage.InitialLoad
     public class StageApplyPatches : LoadingStage
     {
         private static List<ModContentPack> _modList;
-        private static int _currentModNum = 0;
-
         private static ModContentPack? _currentMod;
+        private static int _currentModNum = -1;
+
+        private static bool _loadingPatches;
         private static int _numPatches = -1;
         private static int _currentPatch;
-        private static bool _loadingPatches;
-        
+
         public StageApplyPatches(HarmonyInstance instance) : base(instance)
         {
             _modList = LoadedModManager.RunningMods.ToList();
@@ -24,7 +23,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeInactive()
         {
             _currentMod = null;
-            _currentModNum = 0;
+            _currentModNum = -1;
         }
 
         public override string GetStageName()

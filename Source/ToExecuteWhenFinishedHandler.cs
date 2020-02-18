@@ -7,6 +7,8 @@ namespace BetterLoading
 {
     public class ToExecuteWhenFinishedHandler
     {
+        private const float TARGET_FPS_DURING_LOAD = 30;
+        private const float MAX_FRAME_DURATION = 1f / TARGET_FPS_DURING_LOAD * 10_000f;
         private static long lastEnd;
 
         public static IEnumerator ExecuteToExecuteWhenFinishedTheGoodVersion(List<Action> toExecuteWhenFinished, bool skipLast, Action<Action> actionStartCallback, Action taskFinishedCallback, Action completeCallback)
@@ -51,7 +53,7 @@ namespace BetterLoading
                         index++;
                         if(index >= toExecuteWhenFinished.Count)
                             break;
-                    } while (DateTime.Now.Ticks - lastEnd < 160); //Target 60fps
+                    } while (DateTime.Now.Ticks - lastEnd < MAX_FRAME_DURATION); //Target 60fps
 
                     yield return null;
                     lastEnd = DateTime.Now.Ticks;

@@ -91,6 +91,11 @@ namespace BetterLoading
         {
             Instance = this;
             _currentStage.BecomeActive();
+            StageTimingData.ExecutedStages.Add(new StageTimingData
+            {
+                start = DateTime.Now,
+                stage = _currentStage
+            });
         }
 
         private void Awake()
@@ -140,11 +145,16 @@ namespace BetterLoading
                     //Move to next stage
                     Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName() + " at " + DateTime.Now.ToLongTimeString());
                     _currentStage.BecomeInactive();
-                    
+                    StageTimingData.ExecutedStages.Last().end = DateTime.Now;
+
                     _currentStage = currentList[idx + 1];
                     _currentStage.BecomeActive();
                     Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
-                    
+                    StageTimingData.ExecutedStages.Add(new StageTimingData
+                    {
+                        start = DateTime.Now,
+                        stage = _currentStage
+                    });
                     idx++;
                 }
 
