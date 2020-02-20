@@ -1,4 +1,7 @@
 ﻿using System;
+using System.CodeDom;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Harmony;
 using JetBrains.Annotations;
@@ -13,25 +16,99 @@ namespace BetterLoading
         public static ModContentPack? ourContentPack;
         public static HarmonyInstance? hInstance;
         public static LoadingScreen? LoadingScreen;
-        
+
+        public static Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new Dictionary<ModContentPack, List<DllLoadError>>();
+
+        public class DllLoadError
+        {
+            public string dllName;
+            public LogMessage reasonMessage;
+        }
+
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
-            
+
             hInstance = HarmonyInstance.Create("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
-            
-            LogMsg("BetterLoading :: Init");
 
-            LoadingScreen = Resources.FindObjectsOfTypeAll<Root_Entry>()[0].gameObject.AddComponent<LoadingScreen>();
+            LogMsg("[BetterLoading] Verifying all mods loaded properly...");
 
-            LoadingScreen.Instance.numModClasses = typeof(Mod).InstantiableDescendantsAndSelf().Count();
-            LoadingScreen.Instance.currentModClassBeingInstantiated = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain));
+            var loadFailures = Log.Messages.Where(m => m.text.StartsWith("ReflectionTypeLoadException getting types")).ToList();
+            foreach (var pack in LoadedModManager.RunningMods)
+            {
+                var dllsThatShouldBeLoaded = ModAssemblyHandlerHelper.GetDlls(pack);
+                var dllsActuallyLoaded = pack.assemblies?.loadedAssemblies;
 
-            hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
-                new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+                if (dllsThatShouldBeLoaded.Count == 0) continue;
+
+                if (dllsActuallyLoaded == null)
+                {
+                    Log.Error($"[BetterLoading] DLL Manager for {pack.Name} failed to load!");
+                    continue;
+                }
+
+                if (dllsActuallyLoaded.Count != dllsThatShouldBeLoaded.Count)
+                {
+                    //Some assemblies failed to load
+
+                    var loadedPaths = dllsActuallyLoaded.Select(dll => dll.Location.ToLower()).ToList();
+                    var didntLoad = dllsThatShouldBeLoaded.Select(f => f.FullName).Where(path => loadedPaths.Contains(path.ToLower()) != true).ToList();
+
+                    //Find the log messages where we identified details about which types failed to load
+                    var failures = didntLoad
+                        .Select(Path.GetFileNameWithoutExtension)
+                        .Select(
+                            filename =>
+                                new DllLoadError
+                                {
+                                    dllName = filename,
+                                    reasonMessage = loadFailures.First(f => f.text.Contains($"assembly {filename}"))
+                                }
+                        )
+                        .ToList();
+
+                    Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {didntLoad.ToCommaList()}");
+                    Log.Error($"[BL] Got {failures.Count} messages that identify those failures.");
+
+                    DllPathsThatFailedToLoad[pack] = failures;
+                }
+            }
+
+            if (DllPathsThatFailedToLoad.Count == 0)
+            {
+                Log.Message("[BetterLoading] Injecting into main UI.");
+                LoadingScreen = Resources.FindObjectsOfTypeAll<Root_Entry>()[0].gameObject.AddComponent<LoadingScreen>();
+
+                hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
+                    new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+            }
+            else
+            {
+                Log.Message("[BetterLoading] Not showing loading screen, not all mods loaded successfully so we would be unstable.");
+
+                hInstance.Patch(AccessTools.Method(typeof(UIRoot_Entry), nameof(UIRoot_Entry.Init)), postfix: new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisplayFailedLoadDialog)));
+            }
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        public static void DisplayFailedLoadDialog()
+        {
+            var messageTitle = @"BetterLoading
+
+BetterLoading did not display because not all of your modded .dll files (assemblies) loaded properly. 
+
+This probably means you have a bad load order, or you're missing a dependency, such as HugsLib. 
+
+BetterLoading has nothing to do with this, and it would have happened anyway, we're just letting you know.
+
+Don't report this to the BetterLoading dev. If you want to report it to anyone, report it to the developers of the mods below, but it's probably your fault.
+
+The assemblies that failed to load are:
+" + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray());
+
+            Find.WindowStack.Add(new Dialog_MessageBox(messageTitle));
         }
 
         public static bool DisableVanillaLoadScreen()
@@ -46,6 +123,7 @@ namespace BetterLoading
         }
 
         //Following code kept as reference
+
         #region Save Game Loading Patches
 
         [HarmonyPatch(typeof(Game))]

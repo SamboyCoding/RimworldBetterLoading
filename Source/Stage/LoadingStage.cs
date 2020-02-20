@@ -67,6 +67,26 @@ namespace BetterLoading.Stage
         public virtual void BecomeActive()
         {
         }
+
+        /// <summary>
+        /// Returns whether this stage has encountered any warnings while processing (e.g. non-critical exceptions, etc).
+        /// If this is the case and there is no error, the progress bar will be drawn in yellow for this stage. 
+        /// </summary>
+        /// <returns>True to draw the progress bar in yellow, indicating a warning to the user.</returns>
+        public virtual bool HasWarning()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Returns whether this stage has encountered any critical errors while processing, such that the process of loading the game cannot continue.
+        /// If this is the case, the progress bar will be drawn in red.
+        /// </summary>
+        /// <returns>True to draw the progress bar in red, indicating a load failure.</returns>
+        public virtual bool HasError()
+        {
+            return false;
+        }
         
         /// <summary>
         /// Called when a stage is no longer active (e.g. it finishes), to allow it to do cleanup.

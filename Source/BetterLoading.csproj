@@ -38,7 +38,7 @@
       <HintPath>packages\UnlimitedHugs.Rimworld.HugsLib.6.1.1\lib\net35\0Harmony.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp, Version=1.0.7213.22423, Culture=neutral, PublicKeyToken=null">
+    <Reference Include="Assembly-CSharp, Culture=neutral, PublicKeyToken=null">
       <HintPath>..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
@@ -63,6 +63,7 @@
     <Compile Include="LoadingScreen.cs" />
     <Compile Include="EnumLoadingStage.cs" />
     <Compile Include="LongEventHandlerMirror.cs" />
+    <Compile Include="ModAssemblyHandlerHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StageTimingData.cs" />
     <Compile Include="Stage\InitialLoad\3StageApplyPatches.cs" />

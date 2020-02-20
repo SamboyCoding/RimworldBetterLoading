@@ -30,42 +30,17 @@ namespace BetterLoading
             new StageRunPostLoadPreFinalizeCallbacks(BetterLoadingMain.hInstance),
             new StageRunStaticCctors(BetterLoadingMain.hInstance),
             new StageRunPostFinalizeCallbacks(BetterLoadingMain.hInstance)
-            //TODO: move the rest of the stages to this format.
         };
 
         private Texture2D background;
+        private Texture2D errorBarColor;
+        private Texture2D warningBarColor;
 
         private LoadingStage _currentStage = BootLoadList[0];
 
         public bool shouldShow = true;
 
         public EnumLoadingStage currentStage = EnumLoadingStage.CreateClasses;
-
-        public int numModClasses;
-        public int currentModClassBeingInstantiated;
-        public string modBeingInstantiatedName = "";
-
-        public ModContentPack currentlyLoadingDefsFrom = BetterLoadingMain.ourContentPack;
-        public int totalLoadedContentPacks;
-        public int numContentPacksLoaded;
-
-        public int numPatchesToLoad;
-        public int numPatchesLoaded;
-        public ModContentPack currentlyPatching = BetterLoadingMain.ourContentPack;
-
-        public int numDefsToPreProcess;
-        public int numDefsPreProcessed;
-
-        public int numDefsToProcess;
-        public int numDefsProcessed;
-
-        public int numDefDatabases;
-        public int numDatabasesReloaded;
-        public Type currentDatabaseResolving = typeof(Def);
-
-        public int numStaticConstructorsToCall;
-        public int numStaticConstructorsCalled;
-        public Type? currentStaticConstructor;
 
         //------------File Loading--------------
         public int numWorldGeneratorsToRun;
@@ -78,15 +53,6 @@ namespace BetterLoading
         public int numObjectsToSpawnCurrentMap;
         public int numObjectsSpawnedCurrentMap;
 
-        public static Texture2D makeSolidColor(Color color)
-        {
-            var texture = new Texture2D(Screen.width, Screen.height);
-            Color[] pixels = Enumerable.Repeat(color, Screen.width * Screen.height).ToArray();
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
-        }
-        
         public LoadingScreen()
         {
             Instance = this;
@@ -115,7 +81,11 @@ namespace BetterLoading
             }
 
             if (background == null)
-                background = makeSolidColor(new Color(0.1f, 0.1f, 0.1f, 1));
+                background = SolidColorMaterials.NewSolidColorTexture(new Color(0.1f, 0.1f, 0.1f, 1));
+            if(warningBarColor == null)
+                warningBarColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.89f, 0.8f, 0.11f)); //RGB (226,203,29)
+            if (errorBarColor == null)
+                errorBarColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.73f, 0.09f, 0.09f)); //RGB(185, 24, 24)
 
             try
             {
@@ -179,15 +149,7 @@ namespace BetterLoading
                 var bgRect = new Rect(0, 0, Screen.width, Screen.height);
                 GUI.DrawTexture(bgRect, background);
                 
-                var pct = currentProgress / (float) maxProgress;
-
-                var currentStageText = _currentStage.GetStageName();
-                var subStageText = _currentStage.GetCurrentStepName();
-                if (subStageText != null)
-                    currentStageText = $"{currentStageText} - {subStageText}";
-
-                // Log.Message($"Rendering bar: Current stage is {currentStageText}, % is {pct * 100.0}", true);
-
+                //Draw title
                 Text.Font = GameFont.Medium;
                 Text.Anchor = TextAnchor.MiddleCenter;
 
@@ -195,21 +157,32 @@ namespace BetterLoading
                 Widgets.Label(titleRect, "Initializing Game...");
 
                 Text.Font = GameFont.Small;
+                
+                
+                //Render current stage bar and label
+                var pct = currentProgress / (float) maxProgress;
 
-                //Draw background
-                // UIMenuBackgroundManager.background.BackgroundOnGUI();
+                var currentStageText = _currentStage.GetStageName();
+                var subStageText = _currentStage.GetCurrentStepName();
+                if (subStageText != null)
+                    currentStageText = $"{currentStageText} - {subStageText}";
 
-                //Draw the bar for current stage progress
                 var rect = new Rect(200, Screen.height - 440, Screen.width - 400, 40);
 
-                Widgets.FillableBar(rect, pct);
+                var color = _currentStage.HasError() ? errorBarColor : _currentStage.HasWarning() ? warningBarColor : null;
+
+                if (color != null)
+                    Widgets.FillableBar(rect, pct, color);
+                else
+                    Widgets.FillableBar(rect, pct); //use default blue
+                
                 Widgets.Label(rect, $"{currentProgress}/{maxProgress} ({pct.ToStringPercent()})");
                 Text.Anchor = TextAnchor.UpperLeft;
 
                 rect.y += 50;
                 Widgets.Label(rect, currentStageText);
 
-                //Draw the bar for current stage
+                //Render global progress bar.
                 rect = new Rect(200, Screen.height - 240, Screen.width - 400, 40);
 
                 Text.Anchor = TextAnchor.MiddleCenter;

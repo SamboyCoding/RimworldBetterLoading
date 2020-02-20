@@ -19,6 +19,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static List<Action> _queue;
 
         private static bool _finishedProcessing;
+        private static Exception _encounteredException;
 
         public StageRunStaticCctors(HarmonyInstance instance) : base(instance)
         {
@@ -31,7 +32,11 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string? GetCurrentStepName()
         {
-            return _modType?.FullName ?? "Waiting for vanilla to finish being slow...";
+            var result = _modType?.FullName ?? "Waiting for vanilla to finish being slow...";
+            if (HasError())
+                result = $"Exception occurred processing {result}!";
+
+            return result;
         }
 
         public override int GetCurrentProgress()
@@ -55,6 +60,11 @@ namespace BetterLoading.Stage.InitialLoad
             // instance.Patch(AccessTools.Method(typeof(RuntimeHelpers), nameof(RuntimeHelpers.RunClassConstructor), new []{typeof(RuntimeTypeHandle)}), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreRunClassConstructor)));
         }
 
+        public override bool HasError()
+        {
+            return _encounteredException != null;
+        }
+
         public static IEnumerator StaticConstructAll()
         {
             Log.Message("[BetterLoading] Starting Antifreeze(tm) StaticConstructorCaller. Synchronizing retransmission chronicity...");
@@ -62,11 +72,19 @@ namespace BetterLoading.Stage.InitialLoad
             Log.Message("[BetterLoading] Contact Engaged. Here goes nothing...");
             foreach (var type in _toRun)
             {
-                _modType = type;
+                try
+                {
+                    _modType = type;
 
-                RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                    RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 
-                _numRun++;
+                    _numRun++;
+                }
+                catch (Exception e)
+                {
+                    Log.Error("[BetterLoading] Exception occurred processing mod finalize events! Details: " + e);
+                    _encounteredException = e;
+                }
 
                 yield return null;
             }
