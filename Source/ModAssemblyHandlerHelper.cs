@@ -10,11 +10,7 @@ namespace BetterLoading
         public static List<FileInfo> GetDlls(ModContentPack mod)
         {
             //Copied and adapter from ModAssemblyHandler#reloadAll
-            var directoryInfo = new DirectoryInfo(mod.AssembliesFolder);
-            
-            return directoryInfo.Exists
-                ? directoryInfo.GetFiles("*.*", SearchOption.AllDirectories).Where(file => file.Extension.ToLower() == ".dll").ToList()
-                : new List<FileInfo>();
+            return ModContentPack.GetAllFilesForMod(mod, "Assemblies/", e => e.ToLower() == ".dll").Select(f => f.Value).ToList();
         }
     }
 }
