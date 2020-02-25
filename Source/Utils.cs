@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace BetterLoading
@@ -15,6 +16,11 @@ namespace BetterLoading
             while ( enumerator.MoveNext() ) {
                 yield return (T) enumerator.Current;
             }
+        }
+
+        public static bool DeclaresOwnMethod(this Type t, string methodName)
+        {
+            return t.GetMethod(methodName)?.DeclaringType == t;
         }
     }
 }
