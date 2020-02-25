@@ -64,7 +64,7 @@ namespace BetterLoading
                     if (toExecuteWhenFinished.Count > 0)
                         DeepProfiler.End();
 
-                    LongEventHandlerMirror.ToExecuteWhenFinished = new List<Action>();
+                    // LongEventHandlerMirror.ToExecuteWhenFinished = new List<Action>();
                     LongEventHandlerMirror.CurrentlyExecutingToExecuteWhenFinished = false;
                 }
                 catch (Exception e)
