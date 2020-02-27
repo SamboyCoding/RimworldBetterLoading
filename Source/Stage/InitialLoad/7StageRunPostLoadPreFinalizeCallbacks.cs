@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using HarmonyLib;
+using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -50,7 +51,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override int GetMaximumProgress()
         {
-            return _numTasksToRun - 1;
+            return _numTasksToRun;
         }
 
         public override void DoPatching(Harmony instance)
@@ -71,9 +72,21 @@ namespace BetterLoading.Stage.InitialLoad
 
             _hasBeenCalled = true;
 
-            var targetTypeName = typeof(PlayDataLoader).FullName;
+            var targetTypeName = typeof(PlayDataLoader).FullName ?? throw new Exception("WTF where has playdataloader gone.");
 
-            var indexOfStaticCtor = ___toExecuteWhenFinished.FindIndex(task => task.Method.DeclaringType?.FullName == targetTypeName && task.Method.Name.Contains("m__2"));
+            var last = ___toExecuteWhenFinished.Skip(2900).Take(int.MaxValue).Select(i => i.Method.DeclaringType).ToList();
+            
+            Debug.Log($"BL Debug: last few task defining types: {last.ToStringSafeEnumerable()}");
+            
+            Debug.Log($"BL Debug: Looking for actions defined in type beginning with {targetTypeName}");
+
+            var declaredInPDL = ___toExecuteWhenFinished.Where(task => task.Method.DeclaringType?.FullName?.StartsWith(targetTypeName) == true).ToList();
+            
+            Debug.Log($"BL Debug: types declared in PDL: {declaredInPDL.Select(a => a.Method).ToStringSafeEnumerable()}");
+
+            var indexOfStaticCtor = ___toExecuteWhenFinished.IndexOf(declaredInPDL.Find(task => task.Method.Name.Contains("b__4_2"))); //The anon class that calls static ctors.
+            
+            Debug.Log($"BL Debug: Identified target index as {indexOfStaticCtor} which maps to the action-method {___toExecuteWhenFinished[indexOfStaticCtor].Method.FullDescription()}");
 
             //Ones to execute now are the ones before the ctors
             var toExecute = ___toExecuteWhenFinished.Take(indexOfStaticCtor).ToList();
@@ -85,6 +98,8 @@ namespace BetterLoading.Stage.InitialLoad
 
             //To execute after are the ones after the ctors - if there are any.
             var remainder = ___toExecuteWhenFinished.Skip(indexOfStaticCtor + 1).Take(int.MaxValue).ToList();
+            
+            Debug.Log($"BL Debug: This leaves {toExecute.Count} tasks to execute now, that one to execute in the middle, and then {remainder.Count} to execute after static ctors");
 
             LongEventHandlerMirror.ToExecuteWhenFinished = remainder;
 
