@@ -8,6 +8,10 @@
         <li>1.0</li>
         <li>1.1</li>
     </supportedVersions>
+    <loadBefore>
+    	<li>Ludeon.RimWorld</li>
+    	<li>UnlimitedHugs.HugsLib</li>
+    </loadBefore>
     <description>An enhanced loading screen.</description>
 
 </ModMetaData>
