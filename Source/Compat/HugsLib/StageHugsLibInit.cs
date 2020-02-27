@@ -87,9 +87,9 @@ namespace BetterLoading.Compat.HugsLib
 
             var controllerType = hlAssembly.GetTypes().First(t => t.Name == "HugsLibController");
             var updateFeatureManagerType = hlAssembly.GetTypes().First(t => t.Name == "UpdateFeatureManager");
-            
+
             _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier");
-            
+
             Log.Message($"[BetterLoading:HugsLib Compat] Resolved required hugslib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier: {_modIdentifierProperty?.Name}");
 
             hInstance.Patch(AccessTools.Method(controllerType, "LoadReloadInitialize"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI)));
@@ -99,7 +99,7 @@ namespace BetterLoading.Compat.HugsLib
                 new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreUpdateCheck)),
                 new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostUpdateCheck))
             );
-            
+
             Log.Message("[BetterLoading:HugsLib] Successfully blind-patched hugslib.");
         }
 
@@ -117,8 +117,11 @@ namespace BetterLoading.Compat.HugsLib
 
             foreach (var childMod in _children)
             {
-                hInstance.Patch(AccessTools.Method(childMod.GetType(), nameof(ModBase.Initialize)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreChildInit)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostChildInit)));
-                hInstance.Patch(AccessTools.Method(childMod.GetType(), nameof(ModBase.DefsLoaded)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
+                if (childMod.GetType().DeclaresOwnMethod(nameof(ModBase.Initialize)))
+                    hInstance.Patch(AccessTools.Method(childMod.GetType(), nameof(ModBase.Initialize)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreChildInit)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostChildInit)));
+
+                if (childMod.GetType().DeclaresOwnMethod(nameof(ModBase.DefsLoaded)))
+                    hInstance.Patch(AccessTools.Method(childMod.GetType(), nameof(ModBase.DefsLoaded)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
             }
         }
 

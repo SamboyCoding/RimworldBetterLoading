@@ -64,28 +64,41 @@ namespace BetterLoading.Stage.InitialLoad
             if (_hasBeenCalled) return true;
 
             _done = false;
-
-            _numTasksToRun = ___toExecuteWhenFinished.Count;
-
+            
             //Redirect all actions via us 
             Log.Message($"[BetterLoading] Processing {___toExecuteWhenFinished.Count} post-load tasks.");
             // ___toExecuteWhenFinished = ___toExecuteWhenFinished.Select(GetExecAction).ToList();
 
             _hasBeenCalled = true;
 
+            var targetTypeName = typeof(PlayDataLoader).FullName;
+
+            var indexOfStaticCtor = ___toExecuteWhenFinished.FindIndex(task => task.Method.DeclaringType?.FullName == targetTypeName && task.Method.Name.Contains("m__2"));
+
+            //Ones to execute now are the ones before the ctors
+            var toExecute = ___toExecuteWhenFinished.Take(indexOfStaticCtor).ToList();
+
+            _numTasksToRun = toExecute.Count;
+            
+            //This completely skips the static constructor task, which we manually run, so get a reference to that
+            var runStaticCtors = ___toExecuteWhenFinished[indexOfStaticCtor];
+
+            //To execute after are the ones after the ctors - if there are any.
+            var remainder = ___toExecuteWhenFinished.Skip(indexOfStaticCtor + 1).Take(int.MaxValue).ToList();
+
+            LongEventHandlerMirror.ToExecuteWhenFinished = remainder;
+
             BetterLoadingMain.LoadingScreen.StartCoroutine
             (
                 ToExecuteWhenFinishedHandler.ExecuteToExecuteWhenFinishedTheGoodVersion
                 (
-                    ___toExecuteWhenFinished,
-                    true,
+                    toExecute,
+                    false,
                     currentAction => _currentAction = currentAction,
                     () => _numTasksRun++,
                     () => _finishedExecuting = true
                 )
             );
-
-            var finalTask = ___toExecuteWhenFinished.Last();
 
             LongEventHandler.QueueLongEvent(() =>
             {
@@ -99,7 +112,7 @@ namespace BetterLoading.Stage.InitialLoad
                 
                 Log.Message($"Obtained synclock, assuming post-load actions are complete and starting static constructors");
 
-                finalTask();
+                runStaticCtors();
 
                 Thread.Sleep(0);
 
