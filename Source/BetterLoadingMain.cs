@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,7 +27,7 @@ namespace BetterLoading
         public BetterLoadingMain(ModContentPack content) : base(content)
         {
             ourContentPack = content;
-            
+
             hInstance = new Harmony("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
 
@@ -108,7 +107,49 @@ Don't report this to the BetterLoading dev. If you want to report it to anyone, 
 The assemblies that failed to load are:
 " + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray());
 
+            foreach (var kvp in DllPathsThatFailedToLoad)
+            {
+                var mod = kvp.Key;
+                var errors = kvp.Value;
+
+                Log.Message($"Errors for mod {mod.Name}:");
+                foreach (var dllLoadError in errors)
+                {
+                    var loaderErrors = GetLoaderErrors(dllLoadError.reasonMessage.text);
+                    if (loaderErrors.Count > 0)
+                    {
+                        Log.Message($"\t{dllLoadError.dllName}.dll failed load, identified failed (typeName, assemblyName) list: {loaderErrors.ToStringSafeEnumerable()}");
+                        //TODO: Maybe give advice to users on what exactly failed? We can potentially scan all mods to look for the failed assembly and work out what happened
+                        //TODO: i.e. if they have the mod with this asm below the mod needing it - load order error. If the mod isn't loaded, suggest they load it, etc.
+                    }
+                }
+            }
+
             Find.WindowStack.Add(new Dialog_MessageBox(messageTitle));
+        }
+
+        private static List<(string type, string asm)> GetLoaderErrors(string messageText)
+        {
+            if (!messageText.Contains("Loader exceptions:")) return new List<(string type, string asm)>();
+
+            try
+            {
+                //Splt on arrows and remove the preamble before the first error
+                var split = messageText.Split(new[] {"=> "}, StringSplitOptions.None).Skip(1).Take(int.MaxValue).ToList();
+
+                var target = "from typeref, class/assembly ";
+                var errorDetail = split.Select(e => e.Substring(e.IndexOf(target) + target.Length)).ToList();
+
+                var attemptedLoadOf = errorDetail.Select(e => e.Split(',')).Select(arr => (type: arr[0], asm: arr[1])).ToList();
+
+                return attemptedLoadOf;
+            }
+            catch (Exception)
+            {
+                //We really don't want this to fail, it's just gonna be a pain
+                Log.Warning	("[BetterLoading] Failed to scrape Loader Errors");
+                return new List<(string type, string asm)>();
+            }
         }
 
         public static bool DisableVanillaLoadScreen()
