@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using HarmonyLib;
 using JetBrains.Annotations;
+using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -16,7 +17,7 @@ namespace BetterLoading
         public static Harmony? hInstance;
         public static LoadingScreen? LoadingScreen;
 
-        public static Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new Dictionary<ModContentPack, List<DllLoadError>>();
+        public static readonly Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new Dictionary<ModContentPack, List<DllLoadError>>();
 
         public class DllLoadError
         {
@@ -62,7 +63,7 @@ namespace BetterLoading
                                 new DllLoadError
                                 {
                                     dllName = filename,
-                                    reasonMessage = loadFailures.First(f => f.text.Contains($"assembly {filename}"))
+                                    reasonMessage = loadFailures.First(msg => msg.text.Contains($"assembly {filename}"))
                                 }
                         )
                         .ToList();
@@ -109,23 +110,86 @@ The assemblies that failed to load are:
 
             foreach (var kvp in DllPathsThatFailedToLoad)
             {
-                var mod = kvp.Key;
+                var modThatFailedLoad = kvp.Key;
                 var errors = kvp.Value;
 
-                Log.Message($"Errors for mod {mod.Name}:");
+                Log.Message($"Errors for mod {modThatFailedLoad.Name}:");
                 foreach (var dllLoadError in errors)
                 {
                     var loaderErrors = GetLoaderErrors(dllLoadError.reasonMessage.text);
                     if (loaderErrors.Count > 0)
                     {
-                        Log.Message($"\t{dllLoadError.dllName}.dll failed load, identified failed (typeName, assemblyName) list: {loaderErrors.ToStringSafeEnumerable()}");
-                        //TODO: Maybe give advice to users on what exactly failed? We can potentially scan all mods to look for the failed assembly and work out what happened
-                        //TODO: i.e. if they have the mod with this asm below the mod needing it - load order error. If the mod isn't loaded, suggest they load it, etc.
+                        Log.Message($"\t{dllLoadError.dllName}.dll failed load, identified {loaderErrors.Count} types that failed to load.");
+
+                        var externalErrors = loaderErrors.Where(e => e.asm != dllLoadError.dllName).ToList();
+
+                        if (externalErrors.Count == 0)
+                        {
+                            Log.Message($"\t{dllLoadError.dllName} load failure seems to be entirely internal - corrupt dll?");
+                            continue;
+                        }
+
+                        var missingAssemblies = externalErrors
+                            .Select(e => e.asm)
+                            .Distinct()
+                            .ToList();
+
+                        //Try find mods containing the DLLs we're dependent on but can't get
+                        var unsatisfiedDeps = missingAssemblies 
+                            .Select(e => ModLister.AllInstalledMods.FirstOrDefault(m => ModContainsAssembly(m, e)))
+                            .ToList();
+
+                        Log.Message($"\t{dllLoadError.dllName} appears to have a dependency on these mods: {unsatisfiedDeps.Select(m => m.Name).ToStringSafeEnumerable()}");
+
+                        var notLoaded = unsatisfiedDeps.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod.Name)).ToList();
+                        if(notLoaded.Count > 0)
+                            notLoaded.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
+
+                        var modsLoadedAfterTarget = LoadedModManager.RunningMods.Skip(LoadedModManager.RunningModsListForReading.FindIndex(i => i.Name == modThatFailedLoad.Name)).Take(int.MaxValue).ToList();
+                        var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => unsatisfiedDeps.Any(dep => dep.Name == loadedAfter.Name)).ToList();
+                        if(depsLoadedAfterDependent.Count > 0)
+                            depsLoadedAfterDependent.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
                     }
                 }
             }
 
             Find.WindowStack.Add(new Dialog_MessageBox(messageTitle));
+        }
+
+        private static bool ModContainsAssembly(ModMetaData mod, string assemblyName)
+        {
+            var searchPaths = new List<string>();
+
+            //Sourced from ModContentPack#InitLoadFolders
+            if (mod.LoadFoldersForVersion(VersionControl.CurrentVersionStringWithoutBuild) is {} forBuild)
+                searchPaths.AddRange(forBuild.Select(p => p.folderName));
+            if (mod.LoadFoldersForVersion("default") is {} forDefault)
+                searchPaths.AddRange(forDefault.Select(p => p.folderName));
+
+            if (searchPaths.Count == 0)
+            {
+                //Add default ones - common folder, version folder, + root
+                var pathWithVer = Path.Combine(mod.RootDir.FullName, VersionControl.CurrentVersionStringWithoutBuild);
+                if(Directory.Exists(pathWithVer))
+                    searchPaths.Add(pathWithVer);
+                var commonPath = Path.Combine(mod.RootDir.FullName, ModContentPack.CommonFolderName);
+                if(Directory.Exists(commonPath))
+                    searchPaths.Add(commonPath);
+                searchPaths.Add(mod.RootDir.FullName);
+            }
+
+            var searchFolderNames = searchPaths.Select(p => Path.Combine(mod.RootDir.FullName, p)).ToList();
+
+            var modDlls = searchFolderNames
+                .Select(p => Path.Combine(p, "Assemblies")) //Get assemblies folder
+                .Where(Directory.Exists) //Ensure exists
+                .SelectMany(Directory.GetFiles) //Map to files
+                .Where(p => Path.GetExtension(p) == ".dll") //Ensure dll
+                .Select(Path.GetFileNameWithoutExtension) //File names
+                .ToList();
+
+            return modDlls
+                .Contains(assemblyName); //Check for target
         }
 
         private static List<(string type, string asm)> GetLoaderErrors(string messageText)
@@ -140,14 +204,14 @@ The assemblies that failed to load are:
                 var target = "from typeref, class/assembly ";
                 var errorDetail = split.Select(e => e.Substring(e.IndexOf(target) + target.Length)).ToList();
 
-                var attemptedLoadOf = errorDetail.Select(e => e.Split(',')).Select(arr => (type: arr[0], asm: arr[1])).ToList();
+                var attemptedLoadOf = errorDetail.Select(e => e.Split(',')).Select(arr => (type: arr[0].Trim(), asm: arr[1].Trim())).ToList();
 
                 return attemptedLoadOf;
             }
             catch (Exception)
             {
                 //We really don't want this to fail, it's just gonna be a pain
-                Log.Warning	("[BetterLoading] Failed to scrape Loader Errors");
+                Log.Warning("[BetterLoading] Failed to scrape Loader Errors");
                 return new List<(string type, string asm)>();
             }
         }
