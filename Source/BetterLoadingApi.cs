@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BetterLoading.Stage;
 using Verse;
@@ -7,9 +8,16 @@ namespace BetterLoading
 {
     public static class BetterLoadingApi
     {
-        public static void AddInitialLoadStage(LoadingStage stage)
+        /// <summary>
+        /// Invoked when a loading stage changes (updates its progress), and is called SYNCHRONOUSLY, ON THE UI THREAD.
+        /// If you care about your users, at all, don't do long-running code here.
+        /// </summary>
+        public static event Action<LoadingStage> OnStageChangeSync = stage => { };
+        
+        public static void AddInitialLoadStage<T>(T stage) where T: LoadingStage
         {
             LoadingScreen.BootLoadList.Add(stage);
+            LoadingScreen.RegisterStageInstance(stage);
         }
 
         public static List<LoadingStage> GetInitialLoadStages()
@@ -26,6 +34,13 @@ namespace BetterLoading
             }
             
             LoadingScreen.BootLoadList.Insert(where, stage);
+        }
+
+        public static void DispatchChange(LoadingStage? stage)
+        {
+            if (stage == null) return;
+            
+            OnStageChangeSync(stage);
         }
     }
 }

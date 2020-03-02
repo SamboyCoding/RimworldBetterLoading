@@ -14,15 +14,17 @@ namespace BetterLoading.Compat.HugsLib
         private static bool _hasEnumeratedChildren;
         private static bool _done;
 
-        private static List<object> _children;
+        private static List<object>? _children;
         private static int _numChildrenInitialized;
         private static int _numChildrenCheckedForUpdate;
         private static int _numChildrenDefLoaded;
 
-        private static object _currentChildMod;
-        private static Harmony hInstance;
+        private static object? _currentChildMod;
+        private static Harmony? hInstance;
 
         private static PropertyInfo _modIdentifierProperty;
+
+        private static StageHugsLibInit? inst;
 
         public StageHugsLibInit(Harmony instance) : base(instance)
         {
@@ -31,11 +33,6 @@ namespace BetterLoading.Compat.HugsLib
         public override string GetStageName()
         {
             return "Initializing HugsLib";
-        }
-
-        public override void BecomeActive()
-        {
-            Log.Message($"At becomeActive, toexecutewhenfinished has {LongEventHandlerMirror.ToExecuteWhenFinished.Count} items and eventqueue has {LongEventHandlerMirror.EventQueue.Count} items ");
         }
 
         public override string? GetCurrentStepName()
@@ -77,6 +74,11 @@ namespace BetterLoading.Compat.HugsLib
             return 1 + childCount + childCount + childCount;
         }
 
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageHugsLibInit>();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             hInstance = instance;
@@ -88,7 +90,7 @@ namespace BetterLoading.Compat.HugsLib
 
             _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier");
 
-            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required hugslib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier: {_modIdentifierProperty?.Name}");
+            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required hugslib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier (Property): {_modIdentifierProperty?.Name}");
 
             hInstance.Patch(AccessTools.Method(controllerType, "LoadReloadInitialize"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI)));
             hInstance.Patch(AccessTools.Method(controllerType, "EnumerateChildMods"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostEnumerateChildren)));
@@ -98,7 +100,7 @@ namespace BetterLoading.Compat.HugsLib
                 new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostUpdateCheck))
             );
 
-            Log.Message("[BetterLoading:HugsLib] Successfully blind-patched hugslib.");
+            Log.Message("[BetterLoading:HugsLib Compat] Successfully blind-patched hugslib.");
         }
 
         public static void PostLRI()
@@ -128,21 +130,25 @@ namespace BetterLoading.Compat.HugsLib
             if (__instance.GetType().GetProperty("ModIdentifier") == null) return;
 
             _currentChildMod = __instance;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostChildInit()
         {
             _numChildrenInitialized++;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PreUpdateCheck(string modId)
         {
             _currentChildMod = _children?.Find(m => (string) _modIdentifierProperty.GetValue(m, null) == modId);
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostUpdateCheck()
         {
             _numChildrenCheckedForUpdate++;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PreDefsLoaded(object __instance)
@@ -150,11 +156,13 @@ namespace BetterLoading.Compat.HugsLib
             if (__instance.GetType().GetProperty("ModIdentifier") == null) return;
 
             _currentChildMod = __instance;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostDefsLoaded()
         {
             _numChildrenDefLoaded++;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

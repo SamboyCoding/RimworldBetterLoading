@@ -7,7 +7,7 @@ namespace BetterLoading
 {
     public class ToExecuteWhenFinishedHandler
     {
-        private const float TARGET_FPS_DURING_LOAD = 30;
+        private const float TARGET_FPS_DURING_LOAD = 15;
         private const float MAX_FRAME_DURATION = 1f / TARGET_FPS_DURING_LOAD * 10_000f;
         private static long lastEnd;
 
@@ -53,7 +53,7 @@ namespace BetterLoading
                         index++;
                         if(index >= toExecuteWhenFinished.Count)
                             break;
-                    } while (DateTime.Now.Ticks - lastEnd < MAX_FRAME_DURATION); //Target 60fps
+                    } while (DateTime.Now.Ticks - lastEnd < MAX_FRAME_DURATION); //Target 30fps
 
                     yield return null;
                     lastEnd = DateTime.Now.Ticks;
@@ -73,7 +73,6 @@ namespace BetterLoading
                 }
                 finally
                 {
-                    Log.Message("[BetterLoading] TEWFH: Firing complete callback.");
                     completeCallback();
                 }
             }

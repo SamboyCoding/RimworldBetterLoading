@@ -9,10 +9,11 @@ namespace BetterLoading.Stage.InitialLoad
 {
     public class StageResolveDefDatabases : LoadingStage
     {
-        private static Type _currentDatabase;
+        private static Type? _currentDatabase;
         private static int _numDatabases = 1;
         private static int _currentDatabaseNum;
 
+        private static StageResolveDefDatabases inst;
 
         public StageResolveDefDatabases(Harmony instance) : base(instance)
         {
@@ -43,6 +44,11 @@ namespace BetterLoading.Stage.InitialLoad
             return _currentDatabaseNum == _numDatabases;
         }
 
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageResolveDefDatabases>();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(
@@ -63,6 +69,7 @@ namespace BetterLoading.Stage.InitialLoad
                 _numDatabases = typeof(Def).AllSubclasses().Count() - 2; //ThingCategoryDef and RecipeDef aren't done
 
             _currentDatabase = genericParam;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostMOGT(Type genericParam, string methodName)
@@ -76,6 +83,7 @@ namespace BetterLoading.Stage.InitialLoad
             if (_currentDatabaseNum == _numDatabases - 3)
             {
                 _currentDatabase = typeof(ThingDef);
+                BetterLoadingApi.DispatchChange(inst);
             }
         }
 
@@ -83,6 +91,7 @@ namespace BetterLoading.Stage.InitialLoad
         {
             //Finished thingdef database at this point
             _currentDatabaseNum++;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

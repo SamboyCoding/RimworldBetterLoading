@@ -13,11 +13,13 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numTasksToRun = 2;
         private static int _numTasksRun;
 
-        private static Action _currentAction;
+        private static Action? _currentAction;
 
         private static bool _hasBeenCalled;
 
         private static bool _finishedExecuting;
+
+        private static StageRunPostFinalizeCallbacks? inst;
 
         public StageRunPostFinalizeCallbacks(Harmony instance) : base(instance)
         {
@@ -51,6 +53,11 @@ namespace BetterLoading.Stage.InitialLoad
             return _numTasksToRun;
         }
 
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageRunPostFinalizeCallbacks>();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
@@ -82,10 +89,14 @@ namespace BetterLoading.Stage.InitialLoad
                     ___toExecuteWhenFinished,
                     false,
                     currentAction => _currentAction = currentAction,
-                    () => _numTasksRun++,
                     () =>
                     {
-                        Log.Message("[BetterLoading] Finished post-finalize callbacks, releasing lock.");
+                        _numTasksRun++;
+                        BetterLoadingApi.DispatchChange(inst);
+                    },
+                    () =>
+                    {
+                        // Log.Message("[BetterLoading] Finished post-finalize callbacks, releasing lock.");
                         _finishedExecuting = true;
                     })
             );
@@ -94,13 +105,13 @@ namespace BetterLoading.Stage.InitialLoad
             {
                 Thread.Sleep(500);
 
-                Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-finalize actions are complete.");
+                // Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-finalize actions are complete.");
                 while (!_finishedExecuting)
                 {
                     Thread.Sleep(500); //Wait
                 }
 
-                Log.Message("Obtained lock, assuming we're done with post-finalize.");
+                Log.Message("[BetterLoading] Obtained lock, assuming we're done with post-finalize.");
 
                 Thread.Sleep(0);
 

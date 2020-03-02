@@ -9,6 +9,8 @@ namespace BetterLoading.Stage.InitialLoad
     {
         private static int _numDefsToRegister = 1;
         private static int _currentDefNum;
+
+        private static StageRegisterDefs inst;
         
         public StageRegisterDefs(Harmony instance) : base(instance)
         {
@@ -28,6 +30,11 @@ namespace BetterLoading.Stage.InitialLoad
         {
             _numDefsToRegister = 1; //Cannot be zero because we can't return 0 from GetMaxProgress
             _currentDefNum = 0;
+        }
+
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageRegisterDefs>();
         }
 
         public override string? GetCurrentStepName()
@@ -55,6 +62,7 @@ namespace BetterLoading.Stage.InitialLoad
         {
             _numDefsToRegister = xmlDoc.DocumentElement?.ChildNodes.GetEnumerator().ToIEnumerable<XmlNode>().Count(e => e.NodeType == XmlNodeType.Element) ?? 0;
             _currentDefNum = 0;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PreRegisterDef()
@@ -62,6 +70,7 @@ namespace BetterLoading.Stage.InitialLoad
             if (_currentDefNum >= _numDefsToRegister) return;
             
             _currentDefNum++;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

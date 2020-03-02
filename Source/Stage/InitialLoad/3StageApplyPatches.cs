@@ -15,6 +15,8 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numPatches = -1;
         private static int _currentPatch;
 
+        private static StageApplyPatches inst;
+
         public StageApplyPatches(Harmony instance) : base(instance)
         {
             _modList = LoadedModManager.RunningMods.ToList();
@@ -24,6 +26,11 @@ namespace BetterLoading.Stage.InitialLoad
         {
             _currentMod = null;
             _currentModNum = -1;
+        }
+
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageApplyPatches>();
         }
 
         public override string GetStageName()
@@ -75,6 +82,7 @@ namespace BetterLoading.Stage.InitialLoad
             _currentModNum = _modList.IndexOf(_currentMod) + 1;
             _numPatches = -1;
             _currentPatch = 0;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostLoadPatches(List<PatchOperation> ___patches)
@@ -82,6 +90,7 @@ namespace BetterLoading.Stage.InitialLoad
             _numPatches = ___patches.Count;
             _currentPatch = 0;
             _loadingPatches = false;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PostApplyPatch()
@@ -89,6 +98,8 @@ namespace BetterLoading.Stage.InitialLoad
             _currentPatch++;
             if (_currentPatch > _numPatches)
                 _numPatches++;
+            
+            // BetterLoadingApi.DispatchChange(inst); //This is probably overkill
         }
     }
 }

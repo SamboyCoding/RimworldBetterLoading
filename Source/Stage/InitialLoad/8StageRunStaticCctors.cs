@@ -13,13 +13,15 @@ namespace BetterLoading.Stage.InitialLoad
     public class StageRunStaticCctors : LoadingStage
     {
         private static Type? _modType;
-        private static List<Type> _toRun;
+        private static List<Type>? _toRun;
         private static int _numRun;
 
-        private static List<Action> _queue;
+        private static List<Action>? _queue;
 
         private static bool _finishedProcessing;
-        private static Exception _encounteredException;
+        private static Exception? _encounteredException;
+
+        private static StageRunStaticCctors? inst;
 
         public StageRunStaticCctors(Harmony instance) : base(instance)
         {
@@ -65,11 +67,16 @@ namespace BetterLoading.Stage.InitialLoad
             return _encounteredException != null;
         }
 
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageRunStaticCctors>();
+        }
+
         public static IEnumerator StaticConstructAll()
         {
             Log.Message("[BetterLoading] Starting Antifreeze(tm) StaticConstructorCaller. Synchronizing retransmission chronicity...");
             Application.runInBackground = true;
-            Log.Message("[BetterLoading] Contact Engaged. Here goes nothing...");
+            // Log.Message("[BetterLoading] Contact Engaged. Here goes nothing...");
             foreach (var type in _toRun)
             {
                 try
@@ -79,6 +86,7 @@ namespace BetterLoading.Stage.InitialLoad
                     RuntimeHelpers.RunClassConstructor(type.TypeHandle);
 
                     _numRun++;
+                    BetterLoadingApi.DispatchChange(inst);
                 }
                 catch (Exception e)
                 {
@@ -96,7 +104,7 @@ namespace BetterLoading.Stage.InitialLoad
                 Log.Message("[BetterLoading] Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ". AND I didn't make the game freeze. Take that, Tynan.");
                 var existing = LongEventHandlerMirror.ToExecuteWhenFinished;
 
-                Log.Message($"[BetterLoading] Restoring original job queue of {_queue.Count} item/s and merging with any just added (looking at you, Fluffy) ({existing.Count} entries have been added).");
+                // Log.Message($"[BetterLoading] Restoring original job queue of {_queue.Count} item/s and merging with any just added (looking at you, Fluffy) ({existing.Count} entries have been added).");
                 if (existing.Count > 0 && _queue.Count == 0)
                 {
                     //This is probably usually the case
@@ -117,13 +125,13 @@ namespace BetterLoading.Stage.InitialLoad
 
                 _queue = null;
 
-                Log.Message($"[BetterLoading] Job queue restored. Running GC...");
+                // Log.Message($"[BetterLoading] Job queue restored. Running GC...");
 
                 StaticConstructorOnStartupUtility.coreStaticAssetsLoaded = true;
 
                 GC.Collect(int.MaxValue, GCCollectionMode.Forced); //Copied from PlayDataLoader
 
-                Log.Message($"[BetterLoading] GC Has completed. Relinquishing lock.");
+                // Log.Message($"[BetterLoading] GC Has completed. Relinquishing lock.");
             }
             catch (Exception e)
             {
@@ -133,32 +141,32 @@ namespace BetterLoading.Stage.InitialLoad
             {
                 StageRunPostFinalizeCallbacks.ShouldInterceptNext = true;
                 _finishedProcessing = true;
-                Log.Message("[BetterLoading] Lock released.");
+                // Log.Message("[BetterLoading] Lock released.");
             }
         }
 
         public static bool PreCallAll()
         {
-            Log.Message("Static constructors? Oh, sit down, vanilla, I'll do it myself. Starting now, at " + DateTime.Now.ToLongTimeString(), true);
+            // Log.Message("Static constructors? Oh, sit down, vanilla, I'll do it myself. Starting now, at " + DateTime.Now.ToLongTimeString(), true);
             _toRun = GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().ToList();
 
             BetterLoadingMain.LoadingScreen.StartCoroutine(StaticConstructAll());
 
-            Log.Message("[BetterLoading] Overriding LongEventHandler's toExecuteWhenFinished", true);
+            // Log.Message("[BetterLoading] Overriding LongEventHandler's toExecuteWhenFinished", true);
             
             var result = LongEventHandlerMirror.ToExecuteWhenFinished;
 
-            Log.Message($"[BetterLoading]    Got list of pending actions: {result}. Removing up to and including the static constructor call...", true);
+            // Log.Message($"[BetterLoading]    Got list of pending actions: {result}. Removing up to and including the static constructor call...", true);
 
             var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.Name == "PlayDataLoader" && i.Method.Name.Contains("m__2"));
 
-            Log.Message($"[BetterLoading]        (Which is at index {staticCallIdx} of {result.Count})", true);
+            // Log.Message($"[BetterLoading]        (Which is at index {staticCallIdx} of {result.Count})", true);
 
             result = result.Skip(staticCallIdx + 1).Take(int.MaxValue).ToList(); //Remove the static constructor call
 
             _queue = result;
 
-            Log.Message($"[BetterLoading]     Updating field in LEH to a new list of size {result.Count}...", true);
+            // Log.Message($"[BetterLoading]     Updating field in LEH to a new list of size {result.Count}...", true);
             LongEventHandlerMirror.ToExecuteWhenFinished = new List<Action>();
 
             LongEventHandler.QueueLongEvent(WaitForStaticCtors, null, true, null);
@@ -169,13 +177,13 @@ namespace BetterLoading.Stage.InitialLoad
         private static void WaitForStaticCtors()
         {
             //Called async so can just block
-            Log.Message("[BetterLoading] Blocking LEH until static ctors finish", true);
+            // Log.Message("[BetterLoading] Blocking LEH until static ctors finish", true);
             Thread.Sleep(1000);
-            Log.Message("[BetterLoading] Awaiting release of lock...");
+            // Log.Message("[BetterLoading] Awaiting release of lock...");
             
             while(!_finishedProcessing){Thread.Sleep(2000);} //wait for sync lock to be available
             
-            Log.Message("[BetterLoading] Lock released, assuming we're finished calling static ctors", true);
+            // Log.Message("[BetterLoading] Lock released, assuming we're finished calling static ctors", true);
             Thread.Sleep(0);
             
         }

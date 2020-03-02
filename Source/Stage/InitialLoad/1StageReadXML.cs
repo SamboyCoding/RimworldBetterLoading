@@ -10,6 +10,8 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentPackIdx = 1;
         private int _numPacks = -1;
 
+        private static StageReadXML? inst;
+
         public StageReadXML(Harmony instance) : base(instance)
         {
             
@@ -43,12 +45,14 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             _numPacks = LoadedModManager.RunningMods.Count();
+            inst = LoadingScreen.GetStageInstance<StageReadXML>();
         }
 
         public static void OnLoadDefsComplete(ModContentPack __instance)
         {
             _currentPack = __instance;
             _currentPackIdx++;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

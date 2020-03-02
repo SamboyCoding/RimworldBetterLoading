@@ -11,6 +11,8 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentDefNum;
         private static bool _shouldCount;
         private static LoadableXmlAsset _asset;
+
+        private static StageConstructDefs inst;
         
         public StageConstructDefs(Harmony instance) : base(instance)
         {
@@ -29,6 +31,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             _shouldCount = true;
+            inst = LoadingScreen.GetStageInstance<StageConstructDefs>();
         }
 
         public override void BecomeInactive()
@@ -63,6 +66,7 @@ namespace BetterLoading.Stage.InitialLoad
         {
             _numDefsToResolve = xmlDoc.DocumentElement?.ChildNodes.Count ?? 1;
             _currentDefNum = 0;
+            BetterLoadingApi.DispatchChange(inst);
         }
 
         public static void PreDefFromNode(LoadableXmlAsset loadingAsset)
@@ -71,6 +75,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             _currentDefNum++;
             _asset = loadingAsset;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

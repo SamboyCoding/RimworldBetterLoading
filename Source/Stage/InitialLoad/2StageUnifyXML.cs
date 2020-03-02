@@ -10,8 +10,10 @@ namespace BetterLoading.Stage.InitialLoad
         private static List<LoadableXmlAsset>? _assets;
         private static LoadableXmlAsset? _currentAsset;
         private static int _numAssets = int.MaxValue;
-        private static int _currentAssetNo = 0;
+        private static int _currentAssetNo;
         private static bool _valid;
+
+        private static StageUnifyXML? inst;
         
         public StageUnifyXML(Harmony instance) : base(instance)
         {
@@ -61,6 +63,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             _valid = true;
+            inst = LoadingScreen.GetStageInstance<StageUnifyXML>();
         }
 
         public override void BecomeInactive()
@@ -80,6 +83,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             _currentAsset = next;
             _currentAssetNo = idx + 1;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

@@ -31,6 +31,8 @@ namespace BetterLoading
             new StageRunStaticCctors(BetterLoadingMain.hInstance),
             new StageRunPostFinalizeCallbacks(BetterLoadingMain.hInstance)
         };
+        
+        private static Dictionary<Type, LoadingStage> _loadingStagesByType = new Dictionary<Type, LoadingStage>();
 
         private Texture2D background;
         private Texture2D errorBarColor;
@@ -56,12 +58,39 @@ namespace BetterLoading
         public LoadingScreen()
         {
             Instance = this;
+            BootLoadList.ForEach(s => _loadingStagesByType[s.GetType()] = s);
+            
             _currentStage.BecomeActive();
             StageTimingData.ExecutedStages.Add(new StageTimingData
             {
                 start = DateTime.Now,
                 stage = _currentStage
             });
+        }
+        
+        internal static void RegisterStageInstance<T>(T stage) where T: LoadingStage
+        {
+            try
+            {
+                GetStageInstance<T>(); //Verify not in dict already
+            }
+            catch (ArgumentException)
+            {
+                _loadingStagesByType.Add(typeof(T), stage);
+                return;
+            }
+            
+            throw new ArgumentException($"RegisterStageInstance called for an already registered stage type {typeof(T)} (mapped to {GetStageInstance<T>()}).");
+        }
+
+        internal static T GetStageInstance<T>() where T: LoadingStage
+        {
+            if (!_loadingStagesByType.TryGetValue(typeof(T), out var ret))
+            {
+                throw new ArgumentException($"GetStageInstance called for an unregistered stage type {typeof(T)}.");
+            }
+
+            return (T) ret;
         }
 
         private void Awake()
@@ -114,12 +143,28 @@ namespace BetterLoading
 
                     //Move to next stage
                     Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName() + " at " + DateTime.Now.ToLongTimeString());
-                    _currentStage.BecomeInactive();
+                    try
+                    {
+                        _currentStage.BecomeInactive();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error($"[BetterLoading] The stage {_currentStage} errored during BecomeInactive: {e}");
+                    }
+
                     StageTimingData.ExecutedStages.Last().end = DateTime.Now;
 
                     _currentStage = currentList[idx + 1];
-                    _currentStage.BecomeActive();
-                    Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
+                    try
+                    {
+                        Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
+                        _currentStage.BecomeActive();
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Error($"[BetterLoading] The stage {_currentStage} errored during BecomeActive: {e}");
+                    }
+
                     StageTimingData.ExecutedStages.Add(new StageTimingData
                     {
                         start = DateTime.Now,

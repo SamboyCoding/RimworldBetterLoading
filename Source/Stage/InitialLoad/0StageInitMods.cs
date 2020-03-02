@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BetterLoading.Compat;
 using BetterLoading.Compat.HugsLib;
 using HarmonyLib;
@@ -15,6 +16,8 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentModIdx = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain)) + 1;
         private static ModContentPack _currentMod = BetterLoadingMain.ourContentPack;
         private static bool _completed;
+
+        private static StageInitMods? inst;
 
         public StageInitMods(Harmony instance) : base(instance)
         {
@@ -38,6 +41,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             _numMods = typeof(Mod).InstantiableDescendantsAndSelf().Select(m => m.FullName).Distinct().Count();
+            inst = LoadingScreen.GetStageInstance<StageInitMods>();
         }
 
         public override void BecomeInactive()
@@ -74,6 +78,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             _currentModIdx++;
             _currentMod = pack;
+            BetterLoadingApi.DispatchChange(inst);
         }
     }
 }

@@ -106,7 +106,8 @@ BetterLoading has nothing to do with this, and it would have happened anyway, we
 Don't report this to the BetterLoading dev. If you want to report it to anyone, report it to the developers of the mods below, but it's probably your fault.
 
 The assemblies that failed to load are:
-" + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray());
+" + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray())
+  + "\nIf you would like to see what info BetterLoading has been able to work out in terms of dependencies";
 
             foreach (var kvp in DllPathsThatFailedToLoad)
             {
@@ -135,20 +136,35 @@ The assemblies that failed to load are:
                             .ToList();
 
                         //Try find mods containing the DLLs we're dependent on but can't get
-                        var unsatisfiedDeps = missingAssemblies 
+                        var dependentMods = missingAssemblies
+                            .Where(asm => !asm.Contains("Harmony")) //Ignore harmony as that'll likely break
                             .Select(e => ModLister.AllInstalledMods.FirstOrDefault(m => ModContainsAssembly(m, e)))
+                            .Where(mod => mod != null)
                             .ToList();
 
-                        Log.Message($"\t{dllLoadError.dllName} appears to have a dependency on these mods: {unsatisfiedDeps.Select(m => m.Name).ToStringSafeEnumerable()}");
+                        if (dependentMods.Count > 0)
+                        {
+                            Log.Message($"\t{dllLoadError.dllName} appears to have a dependency on these mod(s): {dependentMods.Select(m => m.Name).ToStringSafeEnumerable()}");
 
-                        var notLoaded = unsatisfiedDeps.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod.Name)).ToList();
-                        if(notLoaded.Count > 0)
-                            notLoaded.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
+                            var notLoaded = dependentMods.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod.Name)).ToList();
+                            if (notLoaded.Count > 0)
+                                notLoaded.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
 
-                        var modsLoadedAfterTarget = LoadedModManager.RunningMods.Skip(LoadedModManager.RunningModsListForReading.FindIndex(i => i.Name == modThatFailedLoad.Name)).Take(int.MaxValue).ToList();
-                        var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => unsatisfiedDeps.Any(dep => dep.Name == loadedAfter.Name)).ToList();
-                        if(depsLoadedAfterDependent.Count > 0)
-                            depsLoadedAfterDependent.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
+                            var modsLoadedAfterTarget = LoadedModManager.RunningMods.Skip(LoadedModManager.RunningModsListForReading.FindIndex(i => i.Name == modThatFailedLoad.Name)).Take(int.MaxValue).ToList();
+                            var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => dependentMods.Any(dep => dep.Name == loadedAfter.Name)).ToList();
+                            if (depsLoadedAfterDependent.Count > 0)
+                                depsLoadedAfterDependent.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
+                        }
+
+                        if (dependentMods.Count != missingAssemblies.Count)
+                        {
+                            var notInAnyMods = missingAssemblies
+                                .Where(asm => ModLister.AllInstalledMods.All(m => !ModContainsAssembly(m, asm)))
+                                .Select(asm => $"{asm}.dll")
+                                .ToList();
+                            
+                            Log.Message($"\t{dllLoadError.dllName} (also) depends on these DLL(s) which couldn't be found in any installed mods: {notInAnyMods.ToStringSafeEnumerable()}");
+                        }
                     }
                 }
             }
@@ -170,10 +186,10 @@ The assemblies that failed to load are:
             {
                 //Add default ones - common folder, version folder, + root
                 var pathWithVer = Path.Combine(mod.RootDir.FullName, VersionControl.CurrentVersionStringWithoutBuild);
-                if(Directory.Exists(pathWithVer))
+                if (Directory.Exists(pathWithVer))
                     searchPaths.Add(pathWithVer);
                 var commonPath = Path.Combine(mod.RootDir.FullName, ModContentPack.CommonFolderName);
-                if(Directory.Exists(commonPath))
+                if (Directory.Exists(commonPath))
                     searchPaths.Add(commonPath);
                 searchPaths.Add(mod.RootDir.FullName);
             }

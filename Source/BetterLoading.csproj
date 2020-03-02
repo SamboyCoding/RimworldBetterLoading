@@ -46,6 +46,7 @@
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath Condition="Exists('../../../RimWorldLinux_Data/')">../../../RimWorldLinux_Data/Managed/UnityEngine.dll</HintPath>
       <HintPath Condition="Exists('..\..\..\RimWorldWin64_Data\')">..\..\..\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath Condition="Exists('../../../RimWorldLinux_Data/')">../../../RimWorldLinux_Data/Managed/UnityEngine.CoreModule.dll</HintPath>
@@ -89,7 +90,7 @@
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.0.0.7" />
+    <PackageReference Include="Lib.Harmony" Version="2.0.0.8" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

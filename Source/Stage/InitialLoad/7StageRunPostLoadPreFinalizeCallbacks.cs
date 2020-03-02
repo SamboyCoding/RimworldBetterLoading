@@ -14,12 +14,14 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numTasksToRun = 2;
         private static int _numTasksRun;
 
-        private static Action _currentAction;
+        private static Action? _currentAction;
 
         private static bool _hasBeenCalled;
 
         private static bool _finishedExecuting;
         private static bool _done;
+
+        private static StageRunPostLoadPreFinalizeCallbacks inst;
 
 
         public StageRunPostLoadPreFinalizeCallbacks(Harmony instance) : base(instance)
@@ -54,6 +56,11 @@ namespace BetterLoading.Stage.InitialLoad
             return _numTasksToRun;
         }
 
+        public override void BecomeActive()
+        {
+            inst = LoadingScreen.GetStageInstance<StageRunPostLoadPreFinalizeCallbacks>();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
@@ -76,17 +83,17 @@ namespace BetterLoading.Stage.InitialLoad
 
             var last = ___toExecuteWhenFinished.Skip(2900).Take(int.MaxValue).Select(i => i.Method.DeclaringType).ToList();
             
-            Debug.Log($"BL Debug: last few task defining types: {last.ToStringSafeEnumerable()}");
+            // Debug.Log($"BL Debug: last few task defining types: {last.ToStringSafeEnumerable()}");
             
-            Debug.Log($"BL Debug: Looking for actions defined in type beginning with {targetTypeName}");
+            // Debug.Log($"BL Debug: Looking for actions defined in type beginning with {targetTypeName}");
 
             var declaredInPDL = ___toExecuteWhenFinished.Where(task => task.Method.DeclaringType?.FullName?.StartsWith(targetTypeName) == true).ToList();
             
-            Debug.Log($"BL Debug: types declared in PDL: {declaredInPDL.Select(a => a.Method).ToStringSafeEnumerable()}");
+            // Debug.Log($"BL Debug: types declared in PDL: {declaredInPDL.Select(a => a.Method).ToStringSafeEnumerable()}");
 
             var indexOfStaticCtor = ___toExecuteWhenFinished.IndexOf(declaredInPDL.Find(task => task.Method.Name.Contains("b__4_2"))); //The anon class that calls static ctors.
             
-            Debug.Log($"BL Debug: Identified target index as {indexOfStaticCtor} which maps to the action-method {___toExecuteWhenFinished[indexOfStaticCtor].Method.FullDescription()}");
+            // Debug.Log($"BL Debug: Identified target index as {indexOfStaticCtor} which maps to the action-method {___toExecuteWhenFinished[indexOfStaticCtor].Method.FullDescription()}");
 
             //Ones to execute now are the ones before the ctors
             var toExecute = ___toExecuteWhenFinished.Take(indexOfStaticCtor).ToList();
@@ -99,7 +106,7 @@ namespace BetterLoading.Stage.InitialLoad
             //To execute after are the ones after the ctors - if there are any.
             var remainder = ___toExecuteWhenFinished.Skip(indexOfStaticCtor + 1).Take(int.MaxValue).ToList();
             
-            Debug.Log($"BL Debug: This leaves {toExecute.Count} tasks to execute now, that one to execute in the middle, and then {remainder.Count} to execute after static ctors");
+            // Debug.Log($"BL Debug: This leaves {toExecute.Count} tasks to execute now, that one to execute in the middle, and then {remainder.Count} to execute after static ctors");
 
             LongEventHandlerMirror.ToExecuteWhenFinished = remainder;
 
@@ -110,14 +117,18 @@ namespace BetterLoading.Stage.InitialLoad
                     toExecute,
                     false,
                     currentAction => _currentAction = currentAction,
-                    () => _numTasksRun++,
+                    () =>
+                    {
+                        _numTasksRun++;
+                        BetterLoadingApi.DispatchChange(inst);
+                    },
                     () => _finishedExecuting = true
                 )
             );
 
             LongEventHandler.QueueLongEvent(() =>
             {
-                Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-load actions are complete.");
+                // Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-load actions are complete.");
                 Thread.Sleep(1000);
 
                 while (!_finishedExecuting)
@@ -125,7 +136,7 @@ namespace BetterLoading.Stage.InitialLoad
                     Thread.Sleep(2000); //Wait
                 }
                 
-                Log.Message($"Obtained synclock, assuming post-load actions are complete and starting static constructors");
+                Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors");
 
                 runStaticCtors();
 
