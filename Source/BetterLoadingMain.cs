@@ -107,7 +107,7 @@ Don't report this to the BetterLoading dev. If you want to report it to anyone, 
 
 The assemblies that failed to load are:
 " + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray())
-  + "\nIf you would like to see what info BetterLoading has been able to work out in terms of dependencies";
+  + "\n\nIf you would like to see what info BetterLoading has been able to work out in terms of mod misconfiguration, open the log window (you may have to enable developer mode in settings first) and look at the last few lines (anything containing, and after, the phrase 'failed load, identified')";
 
             foreach (var kvp in DllPathsThatFailedToLoad)
             {
