@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using HarmonyLib;
+using UnityEngine;
 using Verse;
 
 namespace BetterLoading
@@ -36,6 +38,7 @@ namespace BetterLoading
                             // _currentAction = action;
                             actionStartCallback(action);
 
+                            // Debug.Log($"BL Debug: ToExecuteWhenFinishedHandler toExecuteWhenFinished {index + 1}/{toExecuteWhenFinished.Count} action={action.Method.FullDescription()}");
                             action();
 
                             // _numTasksRun++;

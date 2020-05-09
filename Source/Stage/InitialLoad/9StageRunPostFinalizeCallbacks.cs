@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using HarmonyLib;
+using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -61,11 +62,18 @@ namespace BetterLoading.Stage.InitialLoad
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
         }
 
-        public static bool PreExecToExecWhenFinished(ref List<Action> ___toExecuteWhenFinished)
+        public static bool PreExecToExecWhenFinished(List<Action> ___toExecuteWhenFinished)
         {
-            if (_hasBeenCalled || !ShouldInterceptNext) return true;
+            if (!ShouldInterceptNext) return true;
+            // Debug.Log($"BL Debug StageRunPostLoadPreFinalizeCallbacks.PreExecToExecWhenFinished: hasBeenCalled={_hasBeenCalled}, finishedExecuting={_finishedExecuting}, toExecuteWhenFinished.Count={___toExecuteWhenFinished.Count}");
+            if (_hasBeenCalled)
+            {
+                //Don't let normal ExecuteToExecuteWhenFinished run while we're still executing, to avoid "Already executing" warnings
+                return _finishedExecuting;
+            }
 
             _hasBeenCalled = true;
             ShouldInterceptNext = false;
@@ -79,8 +87,9 @@ namespace BetterLoading.Stage.InitialLoad
                 _finishedExecuting = true;
                 return false;
             }
-            
-            Log.Message($"[BetterLoading] Processing {___toExecuteWhenFinished.Count} post-finalize tasks.");
+
+            var initialNumTasksToRun = _numTasksToRun;
+            Log.Message($"[BetterLoading] Processing {initialNumTasksToRun} post-finalize tasks.");
 
             BetterLoadingMain.LoadingScreen.StartCoroutine
             (
@@ -92,11 +101,14 @@ namespace BetterLoading.Stage.InitialLoad
                     () =>
                     {
                         _numTasksRun++;
+                        //toExecuteWhenFinished actions themselves can call ExecuteWhenFinished and thus increase toExecuteWhenFinished count
+                        _numTasksToRun = ___toExecuteWhenFinished.Count;
                         BetterLoadingApi.DispatchChange(inst);
                     },
                     () =>
                     {
-                        // Log.Message("[BetterLoading] Finished post-finalize callbacks, releasing lock.");
+                        if (initialNumTasksToRun != _numTasksToRun)
+                            Log.Message($"[BetterLoading] Processed an additional {_numTasksToRun - initialNumTasksToRun} post-finalize tasks.");
                         _finishedExecuting = true;
                     })
             );
@@ -118,6 +130,17 @@ namespace BetterLoading.Stage.InitialLoad
                 _finishedExecuting = true;
             }, null, true, null);
             return false;
+        }
+
+        public static bool PreUpdateCurrentSynchronousEvent(/*object ___currentEvent*/)
+        {
+            // Debug.Log($"BL Debug StageRunPostLoadPreFinalizeCallbacks.PreUpdateCurrentSynchronousEvent: hasBeenCalled={_hasBeenCalled}, finishedExecuting={_finishedExecuting}, action={Traverse.Create(___currentEvent).Field("eventAction").GetValue<Action>()?.Method?.FullDescription() ?? "null"}");
+            if (_hasBeenCalled)
+            {
+                //Don't let normal UpdateCurrentSynchronousEvent run while we're still executing, since some loading logic can rely on ExecuteToExecuteWhenFinished running synchronously
+                return _finishedExecuting;
+            }
+            return true;
         }
     }
 }
