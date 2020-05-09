@@ -18,7 +18,7 @@ namespace BetterLoading
             lastEnd = DateTime.Now.Ticks;
             if (LongEventHandlerMirror.CurrentlyExecutingToExecuteWhenFinished)
             {
-                Log.Warning("BL: Already executing.");
+                Log.Warning("[BetterLoading] ToExecuteWhenFinishedHandler already executing.");
             }
             else
             {
@@ -72,7 +72,7 @@ namespace BetterLoading
                 }
                 catch (Exception e)
                 {
-                    Log.Error("BL: Exception finishing up toExecuteWhenFinished! " + e);
+                    Log.Error("[BetterLoading] Exception finishing up toExecuteWhenFinished! " + e);
                 }
                 finally
                 {

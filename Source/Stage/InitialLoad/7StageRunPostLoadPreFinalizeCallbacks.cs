@@ -140,7 +140,7 @@ namespace BetterLoading.Stage.InitialLoad
                     Thread.Sleep(2000); //Wait
                 }
                 
-                Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors");
+                Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors.");
 
                 runStaticCtors();
 
