@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using HarmonyLib;
-using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -68,7 +67,6 @@ namespace BetterLoading.Stage.InitialLoad
         public static bool PreExecToExecWhenFinished(List<Action> ___toExecuteWhenFinished)
         {
             if (!ShouldInterceptNext) return true;
-            // Debug.Log($"BL Debug StageRunPostLoadPreFinalizeCallbacks.PreExecToExecWhenFinished: hasBeenCalled={_hasBeenCalled}, finishedExecuting={_finishedExecuting}, toExecuteWhenFinished.Count={___toExecuteWhenFinished.Count}");
             if (_hasBeenCalled)
             {
                 //Don't let normal ExecuteToExecuteWhenFinished run while we're still executing, to avoid "Already executing" warnings
@@ -134,7 +132,6 @@ namespace BetterLoading.Stage.InitialLoad
 
         public static bool PreUpdateCurrentSynchronousEvent(/*object ___currentEvent*/)
         {
-            // Debug.Log($"BL Debug StageRunPostLoadPreFinalizeCallbacks.PreUpdateCurrentSynchronousEvent: hasBeenCalled={_hasBeenCalled}, finishedExecuting={_finishedExecuting}, action={Traverse.Create(___currentEvent).Field("eventAction").GetValue<Action>()?.Method?.FullDescription() ?? "null"}");
             if (_hasBeenCalled)
             {
                 //Don't let normal UpdateCurrentSynchronousEvent run while we're still executing, since some loading logic can rely on ExecuteToExecuteWhenFinished running synchronously
