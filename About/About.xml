@@ -11,6 +11,7 @@
     <loadBefore>
     	<li>Ludeon.RimWorld</li>
     	<li>UnlimitedHugs.HugsLib</li>
+    	<li>automatic.StartupImpact</li>
     </loadBefore>
     <loadAfter>
         <li>brrainz.harmony</li>
