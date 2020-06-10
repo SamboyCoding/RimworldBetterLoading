@@ -93,9 +93,9 @@ namespace BetterLoading
             return (T) ret;
         }
 
-        private void Awake()
+        public void Awake()
         {
-            Log.Message("BetterLoading :: Injected into main UI");
+            Log.Message("[BetterLoading] Injected into main UI.");
         }
 
         public void OnGUI()
@@ -104,7 +104,7 @@ namespace BetterLoading
 
             if (!LongEventHandler.AnyEventNowOrWaiting)
             {
-                Log.Message("Long event has finished, hiding loading screen.");
+                Log.Message("[BetterLoading] Long event has finished, hiding loading screen.");
                 shouldShow = false;
                 return;
             }
@@ -124,7 +124,7 @@ namespace BetterLoading
 
                 if (currentList == null)
                 {
-                    Log.Error("BetterLoading: Current Load Stage is not in a load list!");
+                    Log.Error("[BetterLoading] Current Load Stage is not in a load list!");
                     shouldShow = false;
                     return;
                 }
@@ -136,13 +136,13 @@ namespace BetterLoading
                 {
                     if (idx + 1 >= currentList.Count)
                     {
-                        Log.Message("BetterLoading: Finished processing load list, hiding.");
+                        Log.Message("[BetterLoading] Finished processing load list, hiding.");
                         shouldShow = false;
                         return;
                     }
 
                     //Move to next stage
-                    Log.Message("BetterLoading: Finished stage " + _currentStage.GetStageName() + " at " + DateTime.Now.ToLongTimeString());
+                    Log.Message($"[BetterLoading] Finished stage {_currentStage.GetStageName()} at {DateTime.Now.ToLongTimeString()}.");
                     try
                     {
                         _currentStage.BecomeInactive();
@@ -157,7 +157,7 @@ namespace BetterLoading
                     _currentStage = currentList[idx + 1];
                     try
                     {
-                        Log.Message("BetterLoading: Starting stage " + _currentStage.GetStageName());
+                        Log.Message($"[BetterLoading] Starting stage {_currentStage.GetStageName()}.");
                         _currentStage.BecomeActive();
                     }
                     catch (Exception e)
@@ -178,14 +178,14 @@ namespace BetterLoading
                 
                 if (maxProgress == 0)
                 {
-                    Log.Warning($"BetterLoading :: Stage {_currentStage.GetType().FullName} returned maxProgress = 0");
+                    Log.Warning($"[BetterLoading] The stage {_currentStage.GetType().FullName} returned maxProgress = 0.");
                     maxProgress = 1;
                 }
                 
                 if (currentProgress > maxProgress)
                 {
                     Log.Error(
-                        $"BetterLoading: Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!",
+                        $"[BetterLoading] Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!",
                         true);
                     currentProgress = maxProgress;
                 }

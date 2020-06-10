@@ -69,7 +69,7 @@ namespace BetterLoading
                         .ToList();
 
                     Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {didntLoad.ToCommaList()}");
-                    Log.Error($"[BL] Got {failures.Count} messages that identify those failures.");
+                    Log.Error($"[BetterLoading] Got {failures.Count} messages that identify those failures.");
 
                     DllPathsThatFailedToLoad[pack] = failures;
                 }
@@ -227,7 +227,7 @@ The assemblies that failed to load are:
             catch (Exception)
             {
                 //We really don't want this to fail, it's just gonna be a pain
-                Log.Warning("[BetterLoading] Failed to scrape Loader Errors");
+                Log.Warning("[BetterLoading] Failed to scrape Loader Errors.");
                 return new List<(string type, string asm)>();
             }
         }

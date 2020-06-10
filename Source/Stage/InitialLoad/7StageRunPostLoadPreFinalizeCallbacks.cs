@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using HarmonyLib;
-using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -64,12 +62,16 @@ namespace BetterLoading.Stage.InitialLoad
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new HarmonyMethod(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
         }
 
-
-        public static bool PreExecToExecWhenFinished(ref List<Action> ___toExecuteWhenFinished)
+        public static bool PreExecToExecWhenFinished(List<Action> ___toExecuteWhenFinished)
         {
-            if (_hasBeenCalled) return true;
+            if (_hasBeenCalled)
+            {
+                //Don't let normal ExecuteToExecuteWhenFinished run while we're still executing, to avoid "Already executing" warnings
+                return _finishedExecuting;
+            }
 
             _done = false;
             
@@ -81,8 +83,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             var targetTypeName = typeof(PlayDataLoader).FullName ?? throw new Exception("WTF where has playdataloader gone.");
 
-            var last = ___toExecuteWhenFinished.Skip(2900).Take(int.MaxValue).Select(i => i.Method.DeclaringType).ToList();
-            
+            // var last = ___toExecuteWhenFinished.Skip(2900).Take(int.MaxValue).Select(i => i.Method.DeclaringType).ToList();
             // Debug.Log($"BL Debug: last few task defining types: {last.ToStringSafeEnumerable()}");
             
             // Debug.Log($"BL Debug: Looking for actions defined in type beginning with {targetTypeName}");
@@ -136,7 +137,7 @@ namespace BetterLoading.Stage.InitialLoad
                     Thread.Sleep(2000); //Wait
                 }
                 
-                Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors");
+                Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors.");
 
                 runStaticCtors();
 
@@ -144,8 +145,19 @@ namespace BetterLoading.Stage.InitialLoad
 
                 _done = true;
             }, null, true, null);
-        return false;
-    }
-}
 
+            return false;
+        }
+
+        public static bool PreUpdateCurrentSynchronousEvent(/*object ___currentEvent*/)
+        {
+            if (_hasBeenCalled)
+            {
+                //Don't let normal UpdateCurrentSynchronousEvent run while we're still executing, since some loading logic can rely on ExecuteToExecuteWhenFinished running synchronously
+                //(such as Steam client missing dialog box failing due to SubSoundDef.resolvedGrains not resolved in an ExecuteWhenFinished action yet)
+                return _finishedExecuting;
+            }
+            return true;
+        }
+    }
 }

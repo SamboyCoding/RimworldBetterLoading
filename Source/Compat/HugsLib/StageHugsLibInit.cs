@@ -90,7 +90,7 @@ namespace BetterLoading.Compat.HugsLib
 
             _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier");
 
-            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required hugslib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier (Property): {_modIdentifierProperty?.Name}");
+            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required HugsLib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier (Property): {_modIdentifierProperty?.Name}");
 
             hInstance.Patch(AccessTools.Method(controllerType, "LoadReloadInitialize"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI)));
             hInstance.Patch(AccessTools.Method(controllerType, "EnumerateChildMods"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostEnumerateChildren)));
@@ -100,7 +100,7 @@ namespace BetterLoading.Compat.HugsLib
                 new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostUpdateCheck))
             );
 
-            Log.Message("[BetterLoading:HugsLib Compat] Successfully blind-patched hugslib.");
+            Log.Message("[BetterLoading:HugsLib Compat] Successfully blind-patched HugsLib.");
         }
 
         public static void PostLRI()

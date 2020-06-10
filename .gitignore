@@ -1,10 +1,6 @@
-
 Assemblies/
-
 *.pdb
-
 Source/obj/
-
-Source/\.idea/
-
+Source/.idea/
+Source/.vs/
 Source/packages/

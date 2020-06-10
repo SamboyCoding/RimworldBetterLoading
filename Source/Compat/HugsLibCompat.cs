@@ -13,7 +13,7 @@ namespace BetterLoading.Compat
 
         public static void Load()
         {
-            Log.Message("[BetterLoading] HugsLib detected, Adding HugsLib support");
+            Log.Message("[BetterLoading] HugsLib detected, adding HugsLib support.");
             
             BetterLoadingApi.AddInitialLoadStage(new StageHugsLibInit(BetterLoadingMain.hInstance));
         }
