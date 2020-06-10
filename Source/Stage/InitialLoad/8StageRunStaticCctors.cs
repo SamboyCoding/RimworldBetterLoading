@@ -36,7 +36,7 @@ namespace BetterLoading.Stage.InitialLoad
         {
             var result = _modType?.FullName ?? "Waiting for vanilla to finish being slow...";
             if (HasError())
-                result = $"Exception occurred processing {result}!";
+                result = $"WARNING: An error has occurred previously, now processing {result}";
 
             return result;
         }
@@ -70,13 +70,25 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeActive()
         {
             inst = LoadingScreen.GetStageInstance<StageRunStaticCctors>();
+
+            var patches = Harmony.GetPatchInfo(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)));
+            
+            //We register a prefix, others may have a postfix which will run on a background thread (probably not what they want)
+            if (patches.Postfixes.Count > 0)
+            {
+                Log.Warning("[BetterLoading] One or more mods have Harmony-Postfixed StaticConstructorOnStartupUtility#CallAll. This is likely to cause errors or undesired behavior, as BetterLoading changes this method to be called from another Thread than the UI one. A list of patches follows.");
+                Log.Warning("[BetterLoading] In addition, when BetterLoading is installed, this postfix will run before any static constructors do, so it likely will not behave as the modder intended anyway.");
+                foreach (var postfix in patches.Postfixes) 
+                    Log.Warning($"[BetterLoading]    - {postfix.PatchMethod.FullDescription()}");
+                Log.Warning($"[BetterLoading] Modders: Consider either loading this data on world load, using a regular static constructor but asking your users to put the mod last in the load order, or if it MUST be done now, consider using BetterLoading API to detect the start of {nameof(StageRunPostFinalizeCallbacks)}, which fires once static constructors are done.");
+                Log.Warning("[BetterLoading] Players: I'm not interested in this warning, if a mod is breaking, show this message to the person who made that mod, not to me. They can reach out to me if they need assistance.");
+            }
         }
 
         public static IEnumerator StaticConstructAll()
         {
             Log.Message("[BetterLoading] Starting Antifreeze(tm) StaticConstructorCaller. Synchronizing retransmission chronicity...");
             Application.runInBackground = true;
-            // Log.Message("[BetterLoading] Contact Engaged. Here goes nothing...");
             foreach (var type in _toRun)
             {
                 try

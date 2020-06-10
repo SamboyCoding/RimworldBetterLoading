@@ -100,7 +100,7 @@ namespace BetterLoading.Stage.InitialLoad
                     {
                         _numTasksRun++;
                         //toExecuteWhenFinished actions themselves can call ExecuteWhenFinished and thus increase toExecuteWhenFinished count
-                        _numTasksToRun = ___toExecuteWhenFinished.Count;
+                        _numTasksToRun = LongEventHandlerMirror.ToExecuteWhenFinished.Count;
                         BetterLoadingApi.DispatchChange(inst);
                     },
                     () =>
