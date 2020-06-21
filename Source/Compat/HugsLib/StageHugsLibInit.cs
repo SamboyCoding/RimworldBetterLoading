@@ -57,12 +57,14 @@ namespace BetterLoading.Compat.HugsLib
 
         public override int GetCurrentProgress()
         {
+            if (_done) return GetMaximumProgress();
+            
             var result = _hasEnumeratedChildren ? 1 : 0;
 
             result += _numChildrenInitialized;
             result += _numChildrenCheckedForUpdate;
             result += _numChildrenDefLoaded;
-            result += _done ? 1 : 0;
+            // result += _done ? 1 : 0;
 
             return Math.Min(result, GetMaximumProgress());
         }
@@ -106,13 +108,18 @@ namespace BetterLoading.Compat.HugsLib
         public static void PostLRI()
         {
             _done = true;
+            Log.Message("[BetterLoading:HugsLib Compat] HugsLib has Loaded, Reloaded, and Initialized. Marking as done.");
         }
 
         public static void PostEnumerateChildren(object ___childMods, Dictionary<Assembly, ModContentPack> ___assemblyContentPacks)
         {
             if (!(___childMods is IEnumerable enumerable)) return;
 
-            _children = enumerable.GetEnumerator().ToIEnumerable<object>().Where(m => ___assemblyContentPacks.ContainsKey(m.GetType().Assembly)).ToList();
+            var children = enumerable.GetEnumerator().ToIEnumerable<object>().ToList();
+
+            Log.Message($"[BetterLoading:HugsLib Compat] HugsLib has enumerated child mods, it has found {children.Count} of them.");
+
+            _children = children.Where(m => ___assemblyContentPacks.ContainsKey(m.GetType().Assembly)).ToList();
             _hasEnumeratedChildren = true;
 
             foreach (var childMod in _children)
