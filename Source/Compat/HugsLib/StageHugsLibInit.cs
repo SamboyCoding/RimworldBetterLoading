@@ -57,7 +57,7 @@ namespace BetterLoading.Compat.HugsLib
 
         public override int GetCurrentProgress()
         {
-            if (_done) return GetMaximumProgress();
+            if (_done) return GetMaximumProgress() + 1;
             
             var result = _hasEnumeratedChildren ? 1 : 0;
 
