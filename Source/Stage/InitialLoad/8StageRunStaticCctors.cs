@@ -85,8 +85,10 @@ namespace BetterLoading.Stage.InitialLoad
             }
         }
 
+
         public static IEnumerator StaticConstructAll()
         {
+            GlobalTimingData.TicksStartedCctors = DateTime.UtcNow.Ticks;
             Log.Message("[BetterLoading] Starting Antifreeze(tm) StaticConstructorCaller. Synchronizing retransmission chronicity...");
             Application.runInBackground = true;
             foreach (var type in _toRun)

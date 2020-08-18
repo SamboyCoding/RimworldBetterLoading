@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using Verse;
@@ -9,7 +10,7 @@ namespace BetterLoading.Stage.InitialLoad
     {
         private static List<ModContentPack> _modList;
         private static ModContentPack? _currentMod;
-        private static int _currentModNum = -1;
+        private static int _currentModNum;
 
         private static bool _loadingPatches;
         private static int _numPatches = -1;
@@ -25,7 +26,8 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeInactive()
         {
             _currentMod = null;
-            _currentModNum = -1;
+            _currentModNum = 0;
+            GlobalTimingData.TicksFinishedBuildingXmlTree = DateTime.UtcNow.Ticks;
         }
 
         public override void BecomeActive()
@@ -60,6 +62,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override int GetMaximumProgress()
         {
+            if (_modList.Count == 0) return 1;
+            
             return _modList.Count;
         }
 

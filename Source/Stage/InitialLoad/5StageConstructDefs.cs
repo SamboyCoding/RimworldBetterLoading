@@ -1,6 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Xml;
 using HarmonyLib;
+using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -13,7 +18,13 @@ namespace BetterLoading.Stage.InitialLoad
         private static LoadableXmlAsset _asset;
 
         private static StageConstructDefs inst;
-        
+
+        private static readonly ConcurrentDictionary<Type, Func<XmlNode, bool, object>> objectFromXmlMethods = new ConcurrentDictionary<Type, Func<XmlNode, bool, object>>();
+        private static ConcurrentDictionary<TypeCacheKey, Type> typeCache = new ConcurrentDictionary<TypeCacheKey, Type>(EqualityComparer<TypeCacheKey>.Default);
+
+        private static MethodInfo GetTypeInternal = typeof(GenTypes).GetMethod("GetTypeInAnyAssemblyInt", BindingFlags.Static | BindingFlags.NonPublic);
+
+
         public StageConstructDefs(Harmony instance) : base(instance)
         {
         }
@@ -39,6 +50,7 @@ namespace BetterLoading.Stage.InitialLoad
             _numDefsToResolve = 1; //Cannot be zero because we can't return 0 from GetMaxProgress
             _currentDefNum = 0;
             _shouldCount = false;
+            GlobalTimingData.TicksFinishedConstructingDefs = DateTime.UtcNow.Ticks;
         }
 
         public override string? GetCurrentStepName()
@@ -58,24 +70,101 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
             instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreDefFromNode)));
+            instance.Patch(AccessTools.Method(typeof(GenTypes), nameof(GenTypes.GetTypeInAnyAssembly)),  new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)),new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeGetTypeInAnyAssembly)));
+            // instance.Patch(AccessTools.Method(typeof(DirectXmlToObject), nameof(DirectXmlToObject.GetObjectFromXmlMethod)), new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeObjectFromXmlGetter)));
+            // instance.Patch(AccessTools.Method(typeof(DirectXmlToObject), nameof(DirectXmlToObject.ObjectFromXml)), new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new HarmonyMethod(typeof(ThreadSafeDirectXmlToObject), nameof(ThreadSafeDirectXmlToObject.ObjectFromXml)));
         }
 
-        public static void PreParseProcXml(XmlDocument xmlDoc)
+        public static void ThreadSafeObjectFromXmlGetter(Type type, ref Func<XmlNode, bool, object> __result)
+        {
+            if (!objectFromXmlMethods.TryGetValue(type, out var func))
+            {
+                var method = typeof(ThreadSafeDirectXmlToObject).GetMethod("ObjectFromXmlReflection", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                func = (Func<XmlNode, bool, object>) Delegate.CreateDelegate(typeof(Func<XmlNode, bool, object>), method.MakeGenericMethod(type));
+                objectFromXmlMethods.TryAdd(type, func);
+            }
+
+            __result = func;
+        }
+
+        public static void ThreadSafeGetTypeInAnyAssembly(string typeName, string namespaceIfAmbiguous, ref Type __result)
+        {
+            var key = new TypeCacheKey(typeName, namespaceIfAmbiguous);
+            if (!typeCache.TryGetValue(key, out var type))
+            {
+                type = (Type) GetTypeInternal.Invoke(null, new object[] {typeName, namespaceIfAmbiguous});
+                typeCache.TryAdd(key, type);
+            }
+
+            __result = type;
+        }
+
+        public static bool PreParseProcXml(XmlDocument xmlDoc)
         {
             _numDefsToResolve = xmlDoc.DocumentElement?.ChildNodes.Count ?? 1;
             _currentDefNum = 0;
             BetterLoadingApi.DispatchChange(inst);
+
+            // return false;
+            return true;
         }
 
         public static void PreDefFromNode(LoadableXmlAsset loadingAsset)
         {
-            if(!_shouldCount) return;
+            if (!_shouldCount) return;
 
             _currentDefNum++;
             _asset = loadingAsset;
             BetterLoadingApi.DispatchChange(inst);
+        }
+
+        public static void ParallelParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
+        {
+            var xmlNodeList = xmlDoc.DocumentElement.ChildNodes.Cast<XmlNode>().ToList();
+
+            //Changed from vanilla in that it's parallel and doesn't have any DeepProfiling 
+            xmlNodeList
+                .AsParallel()
+                .Where(node => node.NodeType == XmlNodeType.Element)
+                .Select(node => (node, assetlookup.TryGetValue(node)))
+                .Do(tuple => XmlInheritance.TryRegister(tuple.node, tuple.Item2?.mod));
+
+            XmlInheritance.Resolve();
+
+            //DefFromNode is the slow part of this function, so technically this is the only part that *has* to be parallel.
+            //This might break horribly.
+            try
+            {
+                var processedDefs = xmlNodeList.AsParallel()
+                    .Select(node => (node, assetlookup.TryGetValue(node)))
+                    .Select(tuple =>
+                    {
+                        var (node, asset) = tuple;
+                        _asset = asset;
+                        var def = DirectXmlLoader.DefFromNode(node, asset);
+                        _currentDefNum++;
+                        return (asset, def);
+                    })
+                    .Where(tuple => tuple.def != null).ToList();
+
+                //Associated mod-associated defs with that mod, by the name of the asset.
+                processedDefs.Where(tuple => tuple.asset?.mod != null)
+                    .Do(tuple => tuple.asset.mod.AddDef(tuple.def, tuple.asset.name));
+
+                //For modless defs, register to PatchedDefs
+                processedDefs.Where(tuple => tuple.asset?.mod == null)
+                    .Do(tuple => LoadedModManagerMirror.PatchedDefs.Add(tuple.def));
+
+                _currentDefNum = _numDefsToResolve;
+            }
+            catch (Exception e)
+            {
+                Log.Error("Exception processing XML: " + e);
+                
+            }
+            
         }
     }
 }

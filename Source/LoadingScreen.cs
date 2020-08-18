@@ -106,6 +106,7 @@ namespace BetterLoading
             {
                 Log.Message("[BetterLoading] Long event has finished, hiding loading screen.");
                 shouldShow = false;
+                BetterLoadingApi.DispatchLoadComplete();
                 return;
             }
 
@@ -138,6 +139,7 @@ namespace BetterLoading
                     {
                         Log.Message("[BetterLoading] Finished processing load list, hiding.");
                         shouldShow = false;
+                        BetterLoadingApi.DispatchLoadComplete();
                         return;
                     }
 

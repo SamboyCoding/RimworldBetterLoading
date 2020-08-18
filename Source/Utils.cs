@@ -22,5 +22,10 @@ namespace BetterLoading
         {
             return t.GetMethod(methodName)?.DeclaringType == t;
         }
+
+        public static bool HarmonyPatchCancelMethod()
+        {
+            return false;
+        }
     }
 }

@@ -40,6 +40,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void BecomeActive()
         {
+            GlobalTimingData.TicksStarted = DateTime.UtcNow.Ticks;
             _numMods = typeof(Mod).InstantiableDescendantsAndSelf().Select(m => m.FullName).Distinct().Count();
             inst = LoadingScreen.GetStageInstance<StageInitMods>();
         }

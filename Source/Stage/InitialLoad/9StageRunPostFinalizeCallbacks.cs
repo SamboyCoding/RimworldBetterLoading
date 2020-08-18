@@ -73,6 +73,9 @@ namespace BetterLoading.Stage.InitialLoad
                 return _finishedExecuting;
             }
 
+            GlobalTimingData.TicksStartedPostFinalize = DateTime.UtcNow.Ticks;
+            Log.Message("Started post-finalize at " + GlobalTimingData.TicksStartedPostFinalize);
+
             _hasBeenCalled = true;
             ShouldInterceptNext = false;
             _numTasksToRun = ___toExecuteWhenFinished.Count;
@@ -124,6 +127,8 @@ namespace BetterLoading.Stage.InitialLoad
                 Log.Message("[BetterLoading] Obtained lock, assuming we're done with post-finalize.");
 
                 Thread.Sleep(0);
+                GlobalTimingData.TicksFinishedPostFinalize = DateTime.UtcNow.Ticks;
+                Log.Message("Finished post-finalize at " + GlobalTimingData.TicksFinishedPostFinalize);
 
                 _finishedExecuting = true;
             }, null, true, null);

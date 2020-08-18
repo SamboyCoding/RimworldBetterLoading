@@ -13,6 +13,8 @@ namespace BetterLoading
         /// If you care about your users, at all, don't do long-running code here.
         /// </summary>
         public static event Action<LoadingStage> OnStageChangeSync = stage => { };
+
+        public static event Action OnGameLoadComplete = () => { };
         
         public static void AddInitialLoadStage<T>(T stage) where T: LoadingStage
         {
@@ -41,6 +43,11 @@ namespace BetterLoading
             if (stage == null) return;
             
             OnStageChangeSync(stage);
+        }
+
+        internal static void DispatchLoadComplete()
+        {
+            OnGameLoadComplete();
         }
     }
 }

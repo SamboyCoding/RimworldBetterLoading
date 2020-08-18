@@ -82,6 +82,8 @@ namespace BetterLoading
 
                 hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
                     new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+
+                BetterLoadingApi.OnGameLoadComplete += CreateTimingReport;
             }
             else
             {
@@ -91,6 +93,25 @@ namespace BetterLoading
             }
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        private void CreateTimingReport()
+        {
+            var timeBuildingXml = TimeSpan.FromTicks(GlobalTimingData.TicksFinishedBuildingXmlTree - GlobalTimingData.TicksStarted);
+            var timeConstructingDefs = TimeSpan.FromTicks(GlobalTimingData.TicksFinishedConstructingDefs - GlobalTimingData.TicksFinishedBuildingXmlTree);
+            var timeResolvingDatabases = TimeSpan.FromTicks(GlobalTimingData.TicksStartedCctors - GlobalTimingData.TicksFinishedConstructingDefs);
+            var timeRunningCctors = TimeSpan.FromTicks(GlobalTimingData.TicksStartedPostFinalize - GlobalTimingData.TicksStartedCctors);
+            var timeRunningPostFinalize = TimeSpan.FromTicks(GlobalTimingData.TicksFinishedPostFinalize - GlobalTimingData.TicksStartedPostFinalize);
+            var totalLoadTime = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - GlobalTimingData.TicksStarted);
+            
+            Log.Message($"[BetterLoading] Game load has finished. Timing data follows:\n" +
+                        $"Spent {timeBuildingXml.TotalMilliseconds}ms reading, building, and patching XML tree.\n" +
+                        $"Spent {timeConstructingDefs.TotalMilliseconds}ms turning XML into def instances.\n" +
+                        $"Spent {timeResolvingDatabases.TotalMilliseconds}ms resolving cross-references and running post-load, pre-finalize callbacks.\n" +
+                        $"Spent {timeRunningCctors.TotalMilliseconds}ms running static constructors (initializing mods).\n" +
+                        $"Spent {timeRunningPostFinalize.Ticks} ticks running post-finalize callbacks.\n" +
+                        $"In total, spent {totalLoadTime.TotalMilliseconds}ms launching the game."
+                , true);
         }
 
         public static void DisplayFailedLoadDialog()
