@@ -9,7 +9,6 @@ using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
-using Object = UnityEngine.Object;
 
 namespace BetterLoading
 {
@@ -80,7 +79,7 @@ namespace BetterLoading
             if (DllPathsThatFailedToLoad.Count == 0)
             {
                 Log.Message("[BetterLoading] Injecting into main UI.");
-                LoadingScreen = Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
+                LoadingScreen = UnityEngine.Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
                 try
                 {
                     LoadingScreen.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null) as Texture2D;
