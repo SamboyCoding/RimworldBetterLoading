@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BetterLoading.Stage;
 using BetterLoading.Stage.InitialLoad;
+using RimWorld;
 using UnityEngine;
 using Verse;
 
@@ -34,9 +35,12 @@ namespace BetterLoading
         
         private static Dictionary<Type, LoadingStage> _loadingStagesByType = new Dictionary<Type, LoadingStage>();
 
-        private Texture2D background;
+        public Texture2D? Background;
         private Texture2D errorBarColor;
         private Texture2D warningBarColor;
+        private Texture2D loadingBarBgColor;
+        private Texture2D loadingBarDefaultColor;
+        private Texture2D loadingBarWhiteColor;
 
         private LoadingStage _currentStage = BootLoadList[0];
 
@@ -54,6 +58,14 @@ namespace BetterLoading
         public int mapIndexSpawningItems = -1;
         public int numObjectsToSpawnCurrentMap;
         public int numObjectsSpawnedCurrentMap;
+
+        private float totalLoadLerpSpeed = 1.5f;
+        private float stageLoadLerpSpeed = 3.0f;
+        private float totalLoadPercentLerp;
+        private float stageLoadPercentLerp;
+        private float bgLerp = 0f;
+        private Texture2D? bgSolidColor;
+        private Texture2D? bgContrastReducer;
 
         public LoadingScreen()
         {
@@ -98,6 +110,57 @@ namespace BetterLoading
             Log.Message("[BetterLoading] Injected into main UI.");
         }
 
+        private void DrawBG()
+        {
+            const float TARGET_DARKNESS = 0.25f;
+            const bool SOLID_COLOR_BG = false;
+
+            bgContrastReducer ??= SolidColorMaterials.NewSolidColorTexture(new Color(1, 1, 1, 1));
+            bgSolidColor ??= SolidColorMaterials.NewSolidColorTexture(new Color(0.1f, 0.1f, 0.1f, 1));
+
+            if (SOLID_COLOR_BG || this.Background == null)
+            {
+                var bgRect = new Rect(0, 0, Screen.width, Screen.height);
+                GUI.DrawTexture(bgRect, bgSolidColor);
+                return;
+            }
+
+            Vector2 size = new Vector2(Background.width, Background.height);
+            bool flag = !(UI.screenWidth > UI.screenHeight * (size.x / size.y));
+            Rect rect;
+            if (flag)
+            {
+                float height = UI.screenHeight;
+                float num = UI.screenHeight * (size.x / size.y);
+                rect = new Rect((UI.screenWidth * 0.5f) - num / 2f, 0f, num, height);
+            }
+            else
+            {
+                float width = UI.screenWidth;
+                float num2 = UI.screenWidth * (size.y / size.x);
+                rect = new Rect(0f, (UI.screenHeight * 0.5f) - num2 / 2f, width, num2);
+            }
+
+            // From the moment the loading screen spawns, darken the background gradually.
+            bgLerp = Mathf.MoveTowards(bgLerp, 1f, Time.deltaTime * Mathf.Abs(1f - bgLerp) * 0.5f);
+            float bgDarkness = Mathf.Lerp(1f, TARGET_DARKNESS, bgLerp);
+
+            var oldCol = GUI.color;
+
+            //Draw default rimworld loading background.
+            GUI.color = new Color(bgDarkness, bgDarkness, bgDarkness, 1f);
+            GUI.DrawTexture(rect, Background, ScaleMode.ScaleToFit);
+
+            // Draw solid color, with transparency - it's the easiest way to reduce background contrast.
+            const float COL = 0.2f;
+            float alpha = Mathf.Lerp(0f, 0.5f, bgLerp);
+            GUI.color = new Color(COL, COL, COL, alpha);
+            var rect2 = new Rect(0, 0, Screen.width, Screen.height);
+            GUI.DrawTexture(rect2, bgContrastReducer);
+
+            GUI.color = oldCol;
+        }
+
         public void OnGUI()
         {
             if (!shouldShow) return;
@@ -110,12 +173,14 @@ namespace BetterLoading
                 return;
             }
 
-            if (background == null)
-                background = SolidColorMaterials.NewSolidColorTexture(new Color(0.1f, 0.1f, 0.1f, 1));
-            if(warningBarColor == null)
+            if (warningBarColor == null)
+            {
                 warningBarColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.89f, 0.8f, 0.11f)); //RGB (226,203,29)
-            if (errorBarColor == null)
                 errorBarColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.73f, 0.09f, 0.09f)); //RGB(185, 24, 24)
+                loadingBarBgColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.5f, 0.5f, 0.5f, 1f));
+                loadingBarDefaultColor = SolidColorMaterials.NewSolidColorTexture(new Color(0.2f, 0.8f, 0.85f));
+                loadingBarWhiteColor = SolidColorMaterials.NewSolidColorTexture(new Color(1f, 1f, 1f, 1f));
+            }
 
             try
             {
@@ -193,50 +258,68 @@ namespace BetterLoading
                 }
 
                 //Draw background
-                var bgRect = new Rect(0, 0, Screen.width, Screen.height);
-                GUI.DrawTexture(bgRect, background);
-                
+                DrawBG();
+
                 //Draw title
                 Text.Font = GameFont.Medium;
                 Text.Anchor = TextAnchor.MiddleCenter;
 
-                var titleRect = new Rect(200, 200, Screen.width - 400, 40);
-                Widgets.Label(titleRect, "Initializing Game...");
+                // Heights of the two loading bars: center of screen.
+                float globalBarHeight = Screen.height * 0.5f;
+                float currentBarHeight = Screen.height * 0.5f + 64f;
+                float titleHeight = Screen.height * 0.5f - 80f;
 
-                Text.Font = GameFont.Small;
-                
-                
-                //Render current stage bar and label
-                var pct = currentProgress / (float) maxProgress;
-
+                // Get names of stage and step.
                 var currentStageText = _currentStage.GetStageName();
                 var subStageText = _currentStage.GetCurrentStepName();
-                if (subStageText != null)
-                    currentStageText = $"{currentStageText} - {subStageText}";
 
-                var rect = new Rect(200, Screen.height - 440, Screen.width - 400, 40);
+                var titleRect = new Rect(200, titleHeight, Screen.width - 400, 46);
+                var subTitleRect = new Rect(200, titleHeight + 36, Screen.width - 400, 46);
+                Widgets.Label(titleRect, "<size=35><b>Loading...</b></size>");
+                Widgets.Label(subTitleRect, $"<size=16><i>Stage {idx + 1} of {currentList.Count}: {currentStageText}</i></size>");
+
+                Text.Font = GameFont.Small;
+
+                //Render current stage bar and label
+
+                // Interpolate progress bar, to make it a little smoother.
+                // Also clamp between 1% and 100% (there was a bug where pct was < 0)
+                var pct = Mathf.Clamp(currentProgress / (float) maxProgress, 0.01f, 1f);
+                float lerpScalar = 1f;
+                if (pct < stageLoadPercentLerp)
+                    lerpScalar = 3f;
+                float dst = Mathf.Abs(pct - stageLoadPercentLerp);
+                stageLoadPercentLerp = Mathf.MoveTowards(stageLoadPercentLerp, pct, Time.deltaTime * dst * stageLoadLerpSpeed * lerpScalar);
+                
+                if (subStageText != null)
+                    currentStageText = $"{subStageText}";
+
+                var rect = new Rect(450, currentBarHeight, Screen.width - 900, 26);
 
                 var color = _currentStage.HasError() ? errorBarColor : _currentStage.HasWarning() ? warningBarColor : null;
 
-                if (color != null)
-                    Widgets.FillableBar(rect, pct, color);
-                else
-                    Widgets.FillableBar(rect, pct); //use default blue
-                
-                Widgets.Label(rect, $"{currentProgress}/{maxProgress} ({pct.ToStringPercent()})");
-                Text.Anchor = TextAnchor.UpperLeft;
+                GUI.DrawTexture(rect.ExpandedBy(2), loadingBarWhiteColor);
+                Widgets.FillableBar(rect, stageLoadPercentLerp, color != null ? color : loadingBarDefaultColor, loadingBarBgColor, false);
 
-                rect.y += 50;
-                Widgets.Label(rect, currentStageText);
+                Widgets.Label(rect, $"<color=black><b>{pct.ToStringPercent()}</b>, {currentProgress} of {maxProgress}</color>");
+
+                // Draw current step item.
+                rect.y += 40;
+                Text.Anchor = TextAnchor.UpperCenter;
+                Widgets.Label(rect, "Current: " + currentStageText);
 
                 //Render global progress bar.
-                rect = new Rect(200, Screen.height - 240, Screen.width - 400, 40);
+                rect = new Rect(200, globalBarHeight, Screen.width - 400, 36);
 
                 Text.Anchor = TextAnchor.MiddleCenter;
-                
-                pct = (idx + 1) / (float) currentList.Count;
-                Widgets.FillableBar(rect, pct);
-                Widgets.Label(rect, $"{idx + 1}/{currentList.Count} ({pct.ToStringPercent()})");
+
+                // Takes the current stage progress to give a more accurate percentage.
+                pct = Mathf.Clamp01((idx + 1) / (float) currentList.Count + currentProgress / (float)maxProgress * 1f / currentList.Count);
+                dst = Mathf.Abs(pct - totalLoadPercentLerp);
+                totalLoadPercentLerp = Mathf.MoveTowards(totalLoadPercentLerp, pct, Time.deltaTime * dst * totalLoadLerpSpeed);
+                GUI.DrawTexture(rect.ExpandedBy(2), loadingBarWhiteColor);
+                Widgets.FillableBar(rect, totalLoadPercentLerp, loadingBarDefaultColor, loadingBarBgColor, false);
+                Widgets.Label(rect, $"<color=black><b>{pct.ToStringPercent()}</b></color>");
                 
                 Text.Anchor = TextAnchor.UpperLeft;
 

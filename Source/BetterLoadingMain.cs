@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using HarmonyLib;
 using JetBrains.Annotations;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Object = UnityEngine.Object;
 
 namespace BetterLoading
 {
@@ -78,7 +80,15 @@ namespace BetterLoading
             if (DllPathsThatFailedToLoad.Count == 0)
             {
                 Log.Message("[BetterLoading] Injecting into main UI.");
-                LoadingScreen = Resources.FindObjectsOfTypeAll<Root_Entry>()[0].gameObject.AddComponent<LoadingScreen>();
+                LoadingScreen = Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
+                try
+                {
+                    LoadingScreen.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null) as Texture2D;
+                }
+                catch (Exception e)
+                {
+                    Log.Warning($"Failed to find or set background texture:\n{e}");
+                }
 
                 hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
                     new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
