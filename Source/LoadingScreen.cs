@@ -125,19 +125,19 @@ namespace BetterLoading
             }
 
             Vector2 size = new Vector2(Background.width, Background.height);
-            bool flag = !(UI.screenWidth > UI.screenHeight * (size.x / size.y));
+            bool flag = !(Screen.width > Screen.height * (size.x / size.y));
             Rect rect;
             if (flag)
             {
-                float height = UI.screenHeight;
-                float num = UI.screenHeight * (size.x / size.y);
-                rect = new Rect((UI.screenWidth * 0.5f) - num / 2f, 0f, num, height);
+                float height = Screen.height;
+                float num = Screen.height * (size.x / size.y);
+                rect = new Rect((Screen.width * 0.5f) - num / 2f, 0f, num, height);
             }
             else
             {
-                float width = UI.screenWidth;
-                float num2 = UI.screenWidth * (size.y / size.x);
-                rect = new Rect(0f, (UI.screenHeight * 0.5f) - num2 / 2f, width, num2);
+                float width = Screen.width;
+                float num2 = Screen.width * (size.y / size.x);
+                rect = new Rect(0f, (Screen.height * 0.5f) - num2 / 2f, width, num2);
             }
 
             // From the moment the loading screen spawns, darken the background gradually.
