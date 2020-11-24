@@ -12,6 +12,13 @@ namespace BetterLoading
     {
         public static LoadingScreen Instance { get; private set; }
 
+        private static bool _tipsAvailable;
+
+        private static List<string>? _tips;
+        private static string? _currentTip;
+        private static long _timeLastTipShown;
+        private const int _ticksPerTip = 5 * 10_000_000; //3 seconds
+
         /// <summary>
         /// The load list used at game boot.
         /// </summary>
@@ -307,6 +314,31 @@ namespace BetterLoading
                 rect.height += 100; //Allow for wrapping
                 Text.Anchor = TextAnchor.UpperCenter;
                 Widgets.Label(rect, "Current: " + currentStageText);
+
+                //Draw loading lines
+                Text.Font = GameFont.Medium;
+                rect.y += 120;
+                if (!_tipsAvailable)
+                {
+                    Widgets.Label(rect, "Gameplay tips will be shown here once the game loads them (after stage 7 completes)");
+                }
+                else
+                {
+                    //Load tips if required
+                    _tips ??= DefDatabase<TipSetDef>.AllDefsListForReading.SelectMany(set => set.tips).InRandomOrder().ToList();
+
+                    if (_currentTip == null || (DateTime.Now.Ticks - _timeLastTipShown) >= _ticksPerTip)
+                    {
+                        //No tip chosen yet, or time for next tip - pick another and reset timer.
+                        _currentTip = _tips.Pop();
+                        _timeLastTipShown = DateTime.Now.Ticks;
+                    }
+                    
+                    //Draw tip.
+                    Widgets.Label(rect, _currentTip);
+                }
+                Text.Font = GameFont.Small;
+
                 rect.height -= 100; //Remove increased height
 
                 //Render global progress bar.
@@ -608,6 +640,12 @@ namespace BetterLoading
             //bar
             barRect = new Rect(rect.x, rect.y + 25, rect.width - 24, 20);
             Widgets.FillableBar(barRect, currentStage <= EnumLoadingStage.FinalizeLoad ? 0 : 1);
+        }
+
+        public static void MarkTipsNowAvailable()
+        {
+            Log.Message("[BetterLoading] Tips should now be available. Showing...");
+            _tipsAvailable = true;
         }
     }
 }

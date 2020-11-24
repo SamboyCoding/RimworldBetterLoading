@@ -49,6 +49,12 @@ namespace BetterLoading.Stage.InitialLoad
             inst = LoadingScreen.GetStageInstance<StageResolveDefDatabases>();
         }
 
+        public override void BecomeInactive()
+        {
+            base.BecomeInactive();
+            LoadingScreen.MarkTipsNowAvailable();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(

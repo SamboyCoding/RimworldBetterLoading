@@ -74,9 +74,26 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ApplyPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreApplyPatches)));
+            
             instance.Patch(AccessTools.Method(typeof(ModContentPack), "LoadPatches"), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreLoadPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostLoadPatches)));
 
             instance.Patch(AccessTools.Method(typeof(PatchOperation), nameof(PatchOperation.Apply)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostApplyPatch)));
+        }
+
+        public static void PreApplyPatches()
+        {
+            //Reset this in case the patch was triggered early
+            _currentModNum = 0;
+            //Some mods load their patches before this point - remove them (e.g. DocWorld)
+            foreach (var modContentPack in LoadedModManager.RunningMods)
+            {
+                if (ModContentPackMirror.GetPatches(modContentPack) != null)
+                {
+                    Log.Message($"[BetterLoading] Removing {modContentPack.Name} from the list of mods to load patches from - its patches have already been loaded.");
+                    _modList.Remove(modContentPack);
+                }
+            }
         }
 
         public static void PreLoadPatches(ModContentPack __instance)
