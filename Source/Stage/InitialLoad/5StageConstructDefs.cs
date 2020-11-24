@@ -55,7 +55,10 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string? GetCurrentStepName()
         {
-            return _asset?.name ?? "<initializing...>";
+            if (_asset?.name == null)
+                return "<initializing...>";
+
+            return $"{_asset.name} (from {_asset.mod.Name})";
         }
 
         public override int GetCurrentProgress()
@@ -73,20 +76,6 @@ namespace BetterLoading.Stage.InitialLoad
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
             instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreDefFromNode)));
             instance.Patch(AccessTools.Method(typeof(GenTypes), nameof(GenTypes.GetTypeInAnyAssembly)),  new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)),new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeGetTypeInAnyAssembly)));
-            // instance.Patch(AccessTools.Method(typeof(DirectXmlToObject), nameof(DirectXmlToObject.GetObjectFromXmlMethod)), new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeObjectFromXmlGetter)));
-            // instance.Patch(AccessTools.Method(typeof(DirectXmlToObject), nameof(DirectXmlToObject.ObjectFromXml)), new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new HarmonyMethod(typeof(ThreadSafeDirectXmlToObject), nameof(ThreadSafeDirectXmlToObject.ObjectFromXml)));
-        }
-
-        public static void ThreadSafeObjectFromXmlGetter(Type type, ref Func<XmlNode, bool, object> __result)
-        {
-            if (!objectFromXmlMethods.TryGetValue(type, out var func))
-            {
-                var method = typeof(ThreadSafeDirectXmlToObject).GetMethod("ObjectFromXmlReflection", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                func = (Func<XmlNode, bool, object>) Delegate.CreateDelegate(typeof(Func<XmlNode, bool, object>), method.MakeGenericMethod(type));
-                objectFromXmlMethods.TryAdd(type, func);
-            }
-
-            __result = func;
         }
 
         public static void ThreadSafeGetTypeInAnyAssembly(string typeName, string namespaceIfAmbiguous, ref Type __result)

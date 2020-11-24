@@ -124,25 +124,25 @@ namespace BetterLoading
                 return;
             }
 
-            Vector2 size = new Vector2(Background.width, Background.height);
-            bool flag = !(Screen.width > Screen.height * (size.x / size.y));
+            var size = new Vector2(Background.width, Background.height);
+            var flag = !(Screen.width > Screen.height * (size.x / size.y));
             Rect rect;
             if (flag)
             {
                 float height = Screen.height;
-                float num = Screen.height * (size.x / size.y);
+                var num = Screen.height * (size.x / size.y);
                 rect = new Rect((Screen.width * 0.5f) - num / 2f, 0f, num, height);
             }
             else
             {
                 float width = Screen.width;
-                float num2 = Screen.width * (size.y / size.x);
+                var num2 = Screen.width * (size.y / size.x);
                 rect = new Rect(0f, (Screen.height * 0.5f) - num2 / 2f, width, num2);
             }
 
             // From the moment the loading screen spawns, darken the background gradually.
             bgLerp = Mathf.MoveTowards(bgLerp, 1f, Time.deltaTime * Mathf.Abs(1f - bgLerp) * 0.5f);
-            float bgDarkness = Mathf.Lerp(1f, TARGET_DARKNESS, bgLerp);
+            var bgDarkness = Mathf.Lerp(1f, TARGET_DARKNESS, bgLerp);
 
             var oldCol = GUI.color;
 
@@ -152,7 +152,7 @@ namespace BetterLoading
 
             // Draw solid color, with transparency - it's the easiest way to reduce background contrast.
             const float COL = 0.2f;
-            float alpha = Mathf.Lerp(0f, 0.5f, bgLerp);
+            var alpha = Mathf.Lerp(0f, 0.5f, bgLerp);
             GUI.color = new Color(COL, COL, COL, alpha);
             var rect2 = new Rect(0, 0, Screen.width, Screen.height);
             GUI.DrawTexture(rect2, bgContrastReducer);
@@ -264,9 +264,9 @@ namespace BetterLoading
                 Text.Anchor = TextAnchor.MiddleCenter;
 
                 // Heights of the two loading bars: center of screen.
-                float globalBarHeight = Screen.height * 0.5f;
-                float currentBarHeight = Screen.height * 0.5f + 64f;
-                float titleHeight = Screen.height * 0.5f - 80f;
+                var globalBarHeight = Screen.height * 0.5f;
+                var currentBarHeight = Screen.height * 0.5f + 64f;
+                var titleHeight = Screen.height * 0.5f - 80f;
 
                 // Get names of stage and step.
                 var currentStageText = _currentStage.GetStageName();
@@ -284,10 +284,10 @@ namespace BetterLoading
                 // Interpolate progress bar, to make it a little smoother.
                 // Also clamp between 1% and 100% (there was a bug where pct was < 0)
                 var pct = Mathf.Clamp(currentProgress / (float) maxProgress, 0.01f, 1f);
-                float lerpScalar = 1f;
+                var lerpScalar = 1f;
                 if (pct < stageLoadPercentLerp)
                     lerpScalar = 3f;
-                float dst = Mathf.Abs(pct - stageLoadPercentLerp);
+                var dst = Mathf.Abs(pct - stageLoadPercentLerp);
                 stageLoadPercentLerp = Mathf.MoveTowards(stageLoadPercentLerp, pct, Time.deltaTime * dst * stageLoadLerpSpeed * lerpScalar);
                 
                 if (subStageText != null)
@@ -304,8 +304,10 @@ namespace BetterLoading
 
                 // Draw current step item.
                 rect.y += 40;
+                rect.height += 100; //Allow for wrapping
                 Text.Anchor = TextAnchor.UpperCenter;
                 Widgets.Label(rect, "Current: " + currentStageText);
+                rect.height -= 100; //Remove increased height
 
                 //Render global progress bar.
                 rect = new Rect(200, globalBarHeight, Screen.width - 400, 36);
