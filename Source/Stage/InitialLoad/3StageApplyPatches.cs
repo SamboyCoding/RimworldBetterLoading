@@ -17,6 +17,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _currentPatch;
 
         private static StageApplyPatches inst;
+        private static bool _hasFinished;
 
         public StageApplyPatches(Harmony instance) : base(instance)
         {
@@ -28,6 +29,7 @@ namespace BetterLoading.Stage.InitialLoad
             _currentMod = null;
             _currentModNum = 0;
             GlobalTimingData.TicksFinishedBuildingXmlTree = DateTime.UtcNow.Ticks;
+            _hasFinished = true;
         }
 
         public override void BecomeActive()
@@ -76,9 +78,9 @@ namespace BetterLoading.Stage.InitialLoad
         {
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ApplyPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreApplyPatches)));
             
-            instance.Patch(AccessTools.Method(typeof(ModContentPack), "LoadPatches"), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreLoadPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostLoadPatches)));
+            instance.Patch(AccessTools.PropertyGetter(typeof(ModContentPack), nameof(ModContentPack.Patches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreLoadPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostLoadPatches)));
 
-            instance.Patch(AccessTools.Method(typeof(PatchOperation), nameof(PatchOperation.Apply)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostApplyPatch)));
+            instance.Patch(AccessTools.Method(typeof(PatchOperation), nameof(PatchOperation.Apply)), postfix: new HarmonyMethod(typeof(StageApplyPatches), nameof(PostApplyPatch)));
         }
 
         public static void PreApplyPatches()
@@ -86,18 +88,12 @@ namespace BetterLoading.Stage.InitialLoad
             //Reset this in case the patch was triggered early
             _currentModNum = 0;
             //Some mods load their patches before this point - remove them (e.g. DocWorld)
-            foreach (var modContentPack in LoadedModManager.RunningMods)
-            {
-                if (ModContentPackMirror.GetPatches(modContentPack) != null)
-                {
-                    Log.Message($"[BetterLoading] Removing {modContentPack.Name} from the list of mods to load patches from - its patches have already been loaded.");
-                    _modList.Remove(modContentPack);
-                }
-            }
         }
 
         public static void PreLoadPatches(ModContentPack __instance)
         {
+            if (_hasFinished) return;
+            
             _loadingPatches = true;
             _currentMod = __instance;
             _currentModNum = _modList.IndexOf(_currentMod) + 1;
@@ -108,6 +104,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public static void PostLoadPatches(List<PatchOperation> ___patches)
         {
+            if (_hasFinished) return;
+            
             _numPatches = ___patches.Count;
             _currentPatch = 0;
             _loadingPatches = false;
