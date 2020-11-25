@@ -9,6 +9,7 @@ using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Object = UnityEngine.Object;
 
 namespace BetterLoading
 {
@@ -78,8 +79,16 @@ namespace BetterLoading
 
             if (DllPathsThatFailedToLoad.Count == 0)
             {
+                //Prepatcher re-launches the game...
+                var alreadyCreatedLoadScreens = Object.FindObjectsOfType<Component>().Where(c => c.GetType().FullName.Contains("LoadingScreen")).ToList();
+                if (alreadyCreatedLoadScreens.Count > 0)
+                {
+                    Log.Warning("[BetterLoading] [Warning] Loading screen already appears to have been injected. Are we running with prepatcher perchance? Destroying old one and re-making.");
+                    alreadyCreatedLoadScreens.ForEach(Object.Destroy);
+                    LoadingScreen = null;
+                }
                 Log.Message("[BetterLoading] Injecting into main UI.");
-                LoadingScreen = UnityEngine.Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
+                LoadingScreen = Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
                 try
                 {
                     LoadingScreen.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null) as Texture2D;
