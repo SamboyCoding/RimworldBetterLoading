@@ -2,6 +2,7 @@ using BetterLoading.Stage;
 using BetterLoading.Stage.InitialLoad;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 using Verse;
@@ -12,9 +13,11 @@ namespace BetterLoading
     {
         public static LoadingScreen Instance { get; private set; }
 
+        private static string _cachedLoadingTipsPath = Path.Combine(GenFilePaths.ConfigFolderPath, "BetterLoading_Cached_Tips");
+
         private static bool _tipsAvailable;
 
-        private static List<string>? _tips;
+        private static List<string> _tips = File.Exists(_cachedLoadingTipsPath) ? File.ReadAllText(_cachedLoadingTipsPath).Split('\0').ToList() : new List<string>();
         private static string? _currentTip;
         private static long _timeLastTipShown;
         private const int _ticksPerTip = 5 * 10_000_000; //3 seconds
@@ -114,6 +117,7 @@ namespace BetterLoading
         public void Awake()
         {
             Log.Message("[BetterLoading] Injected into main UI.");
+            _tipsAvailable = _tips.Count > 0;
         }
 
         private void DrawBG()
@@ -325,8 +329,6 @@ namespace BetterLoading
                 else
                 {
                     //Load tips if required
-                    _tips ??= DefDatabase<TipSetDef>.AllDefsListForReading.SelectMany(set => set.tips).InRandomOrder().ToList();
-
                     if (_currentTip == null || (DateTime.Now.Ticks - _timeLastTipShown) >= _ticksPerTip)
                     {
                         //No tip chosen yet, or time for next tip - pick another and reset timer.
@@ -361,6 +363,11 @@ namespace BetterLoading
             {
                 Log.ErrorOnce($"Encountered exception while rendering loading screen: {e}", 0xBEEF99, true);
             }
+        }
+
+        private static List<string> LoadGameplayTips()
+        {
+            return DefDatabase<TipSetDef>.AllDefsListForReading.SelectMany(set => set.tips).InRandomOrder().ToList();
         }
 
         private void DrawSaveFileLoad()
@@ -645,6 +652,15 @@ namespace BetterLoading
         public static void MarkTipsNowAvailable()
         {
             Log.Message("[BetterLoading] Tips should now be available. Showing...");
+
+            var tips = LoadGameplayTips();
+            var cachedTips = File.Exists(_cachedLoadingTipsPath) ? File.ReadAllText(_cachedLoadingTipsPath).Split('\0').ToList() : new List<string>();
+            if (!tips.SequenceEqual(cachedTips))
+            {
+                File.WriteAllText(_cachedLoadingTipsPath, string.Join("\0", tips));
+                _tips = tips;
+            }
+            
             _tipsAvailable = true;
         }
     }
