@@ -24,7 +24,7 @@ namespace BetterLoading
         public class DllLoadError
         {
             public string dllName;
-            public LogMessage reasonMessage;
+            public LogMessage? reasonMessage;
         }
 
         public BetterLoadingMain(ModContentPack content) : base(content)
@@ -33,6 +33,8 @@ namespace BetterLoading
 
             hInstance = new Harmony("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
+            
+            hInstance.Patch(AccessTools.Method(typeof(PlayDataLoader), nameof(PlayDataLoader.ClearAllPlayData)), new HarmonyMethod(typeof(BetterLoadingMain), nameof(OnClearPlayData)));
 
             LogMsg("[BetterLoading] Verifying all mods loaded properly...");
 
@@ -65,7 +67,7 @@ namespace BetterLoading
                                 new DllLoadError
                                 {
                                     dllName = filename,
-                                    reasonMessage = loadFailures.First(msg => msg.text.Contains($"assembly {filename}"))
+                                    reasonMessage = loadFailures.FirstOrDefault(msg => msg.text.Contains($"assembly {filename}"))
                                 }
                         )
                         .ToList();
@@ -83,7 +85,7 @@ namespace BetterLoading
                 var alreadyCreatedLoadScreens = Object.FindObjectsOfType<Component>().Where(c => c.GetType().FullName.Contains("LoadingScreen")).ToList();
                 if (alreadyCreatedLoadScreens.Count > 0)
                 {
-                    Log.Warning("[BetterLoading] [Warning] Loading screen already appears to have been injected. Are we running with prepatcher perchance? Destroying old one and re-making.");
+                    Log.Warning("[BetterLoading] [Warning] Probably running with prepatcher! The loading screen handler has already been set up - will just destroy it and re-create. This isn't a problem, just letting you know!");
                     alreadyCreatedLoadScreens.ForEach(Object.Destroy);
                     LoadingScreen = null;
                 }
@@ -127,7 +129,7 @@ namespace BetterLoading
                         $"Spent {timeConstructingDefs.TotalMilliseconds}ms turning XML into def instances.\n" +
                         $"Spent {timeResolvingDatabases.TotalMilliseconds}ms resolving cross-references and running post-load, pre-finalize callbacks.\n" +
                         $"Spent {timeRunningCctors.TotalMilliseconds}ms running static constructors (initializing mods).\n" +
-                        $"Spent {timeRunningPostFinalize.Ticks} ticks running post-finalize callbacks.\n" +
+                        $"Spent {timeRunningPostFinalize.TotalMilliseconds}ms running post-finalize callbacks.\n" +
                         $"In total, spent {totalLoadTime.TotalMilliseconds}ms launching the game."
                 , true);
         }
@@ -142,30 +144,36 @@ This probably means you have a bad load order, or you're missing a dependency, s
 
 BetterLoading has nothing to do with this, and it would have happened anyway, we're just letting you know.
 
-Don't report this to the BetterLoading dev. If you want to report it to anyone, report it to the developers of the mods below, but it's probably your fault.
+Don't report this to the BetterLoading dev. If you want to report it to anyone, report it to the developers of the mods below, but it's probably an issue with your setup.
 
 The assemblies that failed to load are:
 " + string.Join("\n", DllPathsThatFailedToLoad.Select(kvp => $"{kvp.Key.Name} - {kvp.Value.Select(e => e.dllName + ".dll").ToCommaList()}").ToArray())
-  + "\n\nIf you would like to see what info BetterLoading has been able to work out in terms of mod misconfiguration, open the log window (you may have to enable developer mode in settings first) and look at the last few lines (anything containing, and after, the phrase 'failed load, identified')";
+  + "\n\nIf you would like to see what info BetterLoading has been able to work out in terms of mod misconfiguration, open the log window (you may have to enable developer mode in settings first) and look at the warning messages from BetterLoading.";
 
             foreach (var kvp in DllPathsThatFailedToLoad)
             {
                 var modThatFailedLoad = kvp.Key;
                 var errors = kvp.Value;
 
-                Log.Message($"Errors for mod {modThatFailedLoad.Name}:");
+                Log.Warning($"[BetterLoading] Mod {modThatFailedLoad.Name} failed to load at least some of its code. Details:");
                 foreach (var dllLoadError in errors)
                 {
+                    if (dllLoadError.reasonMessage == null)
+                    {
+                        Log.Warning($"[BetterLoading] \t{dllLoadError.dllName}.dll failed to load, but we couldn't work out why. Possibly intentional? For safety reasons, the loading screen will not show.");
+                        continue;
+                    }
+                    
                     var loaderErrors = GetLoaderErrors(dllLoadError.reasonMessage.text);
                     if (loaderErrors.Count > 0)
                     {
-                        Log.Message($"\t{dllLoadError.dllName}.dll failed load, identified {loaderErrors.Count} types that failed to load.");
+                        Log.Warning($"[BetterLoading] \t{dllLoadError.dllName}.dll failed load, identified {loaderErrors.Count} types that failed to load.");
 
                         var externalErrors = loaderErrors.Where(e => e.asm != dllLoadError.dllName).ToList();
 
                         if (externalErrors.Count == 0)
                         {
-                            Log.Message($"\t{dllLoadError.dllName} load failure seems to be entirely internal - corrupt dll?");
+                            Log.Warning($"[BetterLoading] \t{dllLoadError.dllName}.dll load failure seems to be entirely internal - corrupt dll?");
                             continue;
                         }
 
@@ -183,16 +191,16 @@ The assemblies that failed to load are:
 
                         if (dependentMods.Count > 0)
                         {
-                            Log.Message($"\t{dllLoadError.dllName} appears to have a dependency on these mod(s): {dependentMods.Select(m => m.Name).ToStringSafeEnumerable()}");
+                            Log.Warning($"[BetterLoading] \t{dllLoadError.dllName} appears to have a dependency on these mod(s): {dependentMods.Select(m => m.Name).ToStringSafeEnumerable()}");
 
                             var notLoaded = dependentMods.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod.Name)).ToList();
                             if (notLoaded.Count > 0)
-                                notLoaded.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
+                                notLoaded.ForEach(m => Log.Warning($"[BetterLoading] \t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
 
                             var modsLoadedAfterTarget = LoadedModManager.RunningMods.Skip(LoadedModManager.RunningModsListForReading.FindIndex(i => i.Name == modThatFailedLoad.Name)).Take(int.MaxValue).ToList();
                             var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => dependentMods.Any(dep => dep.Name == loadedAfter.Name)).ToList();
                             if (depsLoadedAfterDependent.Count > 0)
-                                depsLoadedAfterDependent.ForEach(m => Log.Warning($"\t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
+                                depsLoadedAfterDependent.ForEach(m => Log.Warning($"[BetterLoading] \t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
                         }
 
                         if (dependentMods.Count != missingAssemblies.Count)
@@ -202,7 +210,7 @@ The assemblies that failed to load are:
                                 .Select(asm => $"{asm}.dll")
                                 .ToList();
                             
-                            Log.Message($"\t{dllLoadError.dllName} (also) depends on these DLL(s) which couldn't be found in any installed mods: {notInAnyMods.ToStringSafeEnumerable()}");
+                            Log.Warning($"[BetterLoading] \t{dllLoadError.dllName} (also) depends on these DLL(s) which couldn't be found in any installed mods: {notInAnyMods.ToStringSafeEnumerable()}");
                         }
                     }
                 }
@@ -280,6 +288,18 @@ The assemblies that failed to load are:
         private static void LogMsg(string message)
         {
             Log.Message($"[{DateTime.Now}] {message}");
+        }
+
+        public static void OnClearPlayData()
+        {
+            //Reset our harmony patches.
+            hInstance?.UnpatchAll("me.samboycoding.blm");
+            
+            if(LoadingScreen == null)
+                return;
+            
+            //Destroy loading screen.
+            Object.Destroy(LoadingScreen);
         }
 
         //Following code kept as reference
