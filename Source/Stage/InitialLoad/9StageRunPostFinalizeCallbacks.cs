@@ -128,7 +128,6 @@ namespace BetterLoading.Stage.InitialLoad
 
                 Thread.Sleep(0);
                 GlobalTimingData.TicksFinishedPostFinalize = DateTime.UtcNow.Ticks;
-                Log.Message("Finished post-finalize at " + GlobalTimingData.TicksFinishedPostFinalize);
 
                 _finishedExecuting = true;
             }, null, true, null);

@@ -16,11 +16,10 @@ namespace BetterLoading.Compat.HugsLib
 
         private static List<object>? _children;
         private static int _numChildrenInitialized;
-        private static int _numChildrenCheckedForUpdate;
         private static int _numChildrenDefLoaded;
 
         private static object? _currentChildMod;
-        private static Harmony? hInstance;
+        private static Harmony hInstance;
 
         private static PropertyInfo _modIdentifierProperty;
 
@@ -42,27 +41,23 @@ namespace BetterLoading.Compat.HugsLib
 
             if (_currentChildMod != null)
             {
-                if (_numChildrenInitialized < _children.Count)
+                if (_numChildrenInitialized < _children!.Count)
                     return $"Initializing child mods: {_numChildrenInitialized} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
-
-                if (_numChildrenCheckedForUpdate < _children.Count)
-                    return $"Checking for mod updates: {_numChildrenCheckedForUpdate} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
 
                 if (_numChildrenDefLoaded < _children.Count)
                     return $"Invoking post-load callbacks: {_numChildrenDefLoaded} / {_children}: {_modIdentifierProperty.GetValue(_currentChildMod, null)}";
             }
 
-            return _numChildrenDefLoaded == _children.Count ? "Finishing up" : null;
+            return _numChildrenDefLoaded == _children!.Count ? "Finishing up" : null;
         }
 
         public override int GetCurrentProgress()
         {
             if (_done) return GetMaximumProgress() + 1;
-            
+
             var result = _hasEnumeratedChildren ? 1 : 0;
 
             result += _numChildrenInitialized;
-            result += _numChildrenCheckedForUpdate;
             result += _numChildrenDefLoaded;
             // result += _done ? 1 : 0;
 
@@ -87,19 +82,19 @@ namespace BetterLoading.Compat.HugsLib
 
             var hlAssembly = LoadedModManager.RunningMods.First(m => m.Name == "HugsLib").assemblies.loadedAssemblies.Find(a => a.GetName().Name == "HugsLib");
 
-            var controllerType = hlAssembly.GetTypes().First(t => t.Name == "HugsLibController");
-            var updateFeatureManagerType = hlAssembly.GetTypes().First(t => t.Name == "UpdateFeatureManager");
+            var controllerType = hlAssembly.GetTypes().FirstOrDefault(t => t.Name == "HugsLibController") ?? throw new Exception("Type HugsLibController is missing");
 
-            _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier");
+            _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier") ?? throw new Exception("Property ModBase.ModIdentifier is missing");
 
-            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required HugsLib types as follows: Controller: {controllerType?.FullName} / Update Manager: {updateFeatureManagerType?.FullName} / Mod Identifier (Property): {_modIdentifierProperty?.Name}");
+            Log.Message($"[BetterLoading:HugsLib Compat] Resolved required HugsLib types as follows: Controller: {controllerType.FullName} / Mod Identifier (Property): {_modIdentifierProperty.Name}");
 
-            hInstance.Patch(AccessTools.Method(controllerType, "LoadReloadInitialize"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI)));
-            hInstance.Patch(AccessTools.Method(controllerType, "EnumerateChildMods"), postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostEnumerateChildren)));
             hInstance.Patch(
-                AccessTools.Method(updateFeatureManagerType, "InspectActiveMod"),
-                new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreUpdateCheck)),
-                new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostUpdateCheck))
+                AccessTools.Method(controllerType, "LoadReloadInitialize") ?? throw new Exception("Method HugsLibController.LoadReloadInitialize is missing"),
+                postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI))
+            );
+            hInstance.Patch(
+                AccessTools.Method(controllerType, "EnumerateChildMods")  ?? throw new Exception("Method HugsLibController.EnumerateChildMods is missing"),
+                postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostEnumerateChildren))
             );
 
             Log.Message("[BetterLoading:HugsLib Compat] Successfully blind-patched HugsLib.");
@@ -143,18 +138,6 @@ namespace BetterLoading.Compat.HugsLib
         public static void PostChildInit()
         {
             _numChildrenInitialized++;
-            BetterLoadingApi.DispatchChange(inst);
-        }
-
-        public static void PreUpdateCheck(string modId)
-        {
-            _currentChildMod = _children?.Find(m => (string) _modIdentifierProperty.GetValue(m, null) == modId);
-            BetterLoadingApi.DispatchChange(inst);
-        }
-
-        public static void PostUpdateCheck()
-        {
-            _numChildrenCheckedForUpdate++;
             BetterLoadingApi.DispatchChange(inst);
         }
 
