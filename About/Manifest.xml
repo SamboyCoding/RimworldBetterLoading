@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Manifest>
     <identifier>BetterLoading</identifier>
-    <version>3.1.2.0</version>
+    <version>3.1.3.0</version>
     <loadBefore>
         <li>Core &gt;= 1.0</li>
         <li>Startupimpact</li>

@@ -22,6 +22,9 @@
       <HintPath Condition="Exists('..\..\..\RimWorldWin64_Data\')">..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Assembly-CSharp, Version=1.3.7871.17490, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
       <HintPath Condition="Exists('../../../RimWorldLinux_Data/')">../../../RimWorldLinux_Data/Managed/UnityEngine.dll</HintPath>
       <HintPath Condition="Exists('..\..\..\RimWorldWin64_Data\')">..\..\..\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
