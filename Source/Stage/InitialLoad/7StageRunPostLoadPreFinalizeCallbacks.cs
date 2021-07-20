@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using HarmonyLib;
+using RimWorld;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -92,9 +93,13 @@ namespace BetterLoading.Stage.InitialLoad
             
             // Debug.Log($"BL Debug: types declared in PDL: {declaredInPDL.Select(a => a.Method).ToStringSafeEnumerable()}");
 
-            var indexOfStaticCtor = ___toExecuteWhenFinished.IndexOf(declaredInPDL.Find(task => task.Method.Name.Contains("b__4_2"))); //The anon class that calls static ctors.
+            var targetMethodName = VersionControl.CurrentMinor == 3 ? "b__4_3" : "b__4_2";
+
+            // Log.Message($"BL Debug: Tasks defined in PDL: {string.Join(", ", declaredInPDL.Select(task => task.Method.FullDescription()))}");
             
-            // Debug.Log($"BL Debug: Identified target index as {indexOfStaticCtor} which maps to the action-method {___toExecuteWhenFinished[indexOfStaticCtor].Method.FullDescription()}");
+            var indexOfStaticCtor = ___toExecuteWhenFinished.IndexOf(declaredInPDL.Find(task => task.Method.Name.Contains(targetMethodName))); //The anon class that calls static ctors.
+            
+            // Log.Message($"BL Debug: Identified target index as {indexOfStaticCtor} which maps to the action-method {___toExecuteWhenFinished[indexOfStaticCtor].Method.FullDescription()}");
 
             //Ones to execute now are the ones before the ctors
             var toExecute = ___toExecuteWhenFinished.Take(indexOfStaticCtor).ToList();
@@ -144,7 +149,7 @@ namespace BetterLoading.Stage.InitialLoad
                 Thread.Sleep(0);
 
                 _done = true;
-            }, null, true, null);
+            }, null, false, null);
 
             return false;
         }

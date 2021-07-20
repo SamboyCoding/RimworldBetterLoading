@@ -74,20 +74,20 @@ namespace BetterLoading.Stage.InitialLoad
             }
 
             GlobalTimingData.TicksStartedPostFinalize = DateTime.UtcNow.Ticks;
-            Log.Message("Started post-finalize at " + GlobalTimingData.TicksStartedPostFinalize);
 
             _hasBeenCalled = true;
             ShouldInterceptNext = false;
-            _numTasksToRun = ___toExecuteWhenFinished.Count;
 
             _finishedExecuting = false;
 
-            if (_numTasksToRun == 0)
+            if (___toExecuteWhenFinished.Count == 0)
             {
                 _numTasksToRun = 1;
                 _finishedExecuting = true;
                 return false;
             }
+
+            _numTasksToRun = ___toExecuteWhenFinished.Count;
 
             var initialNumTasksToRun = _numTasksToRun;
             Log.Message($"[BetterLoading] Processing {initialNumTasksToRun} post-finalize tasks.");

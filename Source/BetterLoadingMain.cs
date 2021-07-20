@@ -72,7 +72,7 @@ namespace BetterLoading
                         )
                         .ToList();
 
-                    Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {didntLoad.ToCommaList()}");
+                    Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {string.Join(", ",didntLoad)}");
                     Log.Error($"[BetterLoading] Got {failures.Count} messages that identify those failures.");
 
                     DllPathsThatFailedToLoad[pack] = failures;
@@ -130,8 +130,7 @@ namespace BetterLoading
                         $"Spent {timeResolvingDatabases.TotalMilliseconds}ms resolving cross-references and running post-load, pre-finalize callbacks.\n" +
                         $"Spent {timeRunningCctors.TotalMilliseconds}ms running static constructors (initializing mods).\n" +
                         $"Spent {timeRunningPostFinalize.TotalMilliseconds}ms running post-finalize callbacks.\n" +
-                        $"In total, spent {totalLoadTime.TotalMilliseconds}ms launching the game."
-                , true);
+                        $"In total, spent {totalLoadTime.TotalMilliseconds}ms launching the game.");
         }
 
         public static void DisplayFailedLoadDialog()

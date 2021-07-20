@@ -262,8 +262,7 @@ namespace BetterLoading
                 if (currentProgress > maxProgress)
                 {
                     Log.Error(
-                        $"[BetterLoading] Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!",
-                        true);
+                        $"[BetterLoading] Clamping! The stage of type {_currentStage.GetType().FullName} has returned currentProgress {currentProgress} > maxProgress {maxProgress}. Please report this!");
                     currentProgress = maxProgress;
                 }
 
@@ -332,7 +331,16 @@ namespace BetterLoading
                     if (_currentTip == null || (DateTime.Now.Ticks - _timeLastTipShown) >= _ticksPerTip)
                     {
                         //No tip chosen yet, or time for next tip - pick another and reset timer.
-                        _currentTip = _tips.Pop();
+
+                        if (_tips.NullOrEmpty())
+                        {
+                            _currentTip = "BetterLoading Warning: No tips could be located in your game. This is probably a bug with another mod";
+                        }
+                        else
+                        {
+                            _currentTip = _tips.Pop();
+                        }
+
                         _timeLastTipShown = DateTime.Now.Ticks;
                     }
                     
@@ -361,7 +369,7 @@ namespace BetterLoading
             }
             catch (Exception e)
             {
-                Log.ErrorOnce($"Encountered exception while rendering loading screen: {e}", 0xBEEF99, true);
+                Log.ErrorOnce($"Encountered exception while rendering loading screen: {e}", 0xBEEF99);
             }
         }
 
