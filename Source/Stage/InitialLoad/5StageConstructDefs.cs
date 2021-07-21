@@ -36,7 +36,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override bool IsCompleted()
         {
-            return _currentDefNum == _numDefsToResolve;
+            return _currentDefNum >= _numDefsToResolve;
         }
 
         public override void BecomeActive()
@@ -73,7 +73,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PostParseProcessXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
             instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreDefFromNode)));
             instance.Patch(AccessTools.Method(typeof(GenTypes), nameof(GenTypes.GetTypeInAnyAssembly)),  new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)),new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeGetTypeInAnyAssembly)));
         }
@@ -107,6 +107,11 @@ namespace BetterLoading.Stage.InitialLoad
             _currentDefNum++;
             _asset = loadingAsset;
             BetterLoadingApi.DispatchChange(inst);
+        }
+
+        public static void PostParseProcessXml()
+        {
+            _currentDefNum = _numDefsToResolve;
         }
 
         public static void ParallelParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
