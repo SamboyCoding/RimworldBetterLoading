@@ -93,6 +93,7 @@ namespace BetterLoading.Stage.SaveLoad
         public override void BecomeInactive()
         {
             _allMapsLoaded = false;
+            _currMapNum = -1;
         }
 
         public override void DoPatching(Harmony instance)

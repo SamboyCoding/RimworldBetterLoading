@@ -49,7 +49,7 @@ namespace BetterLoading.Stage.SaveLoad
         public override void BecomeInactive()
         {
             _finished = false;
-            _currMapIdx = 0;
+            _currMapIdx = -1;
             _numThingsThisMapSoFar = 0;
         }
 

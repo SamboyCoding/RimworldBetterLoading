@@ -11,9 +11,7 @@ namespace BetterLoading.Stage.SaveLoad
         private static bool _hasLoadedWorldFromFile;
         private static bool _hasFinalizedWorldInit;
         private static bool _loadingGeneratorDataFromFile;
-
-        private static WorldGenStep _currentWorldgenStep;
-        private static int _currentWorldgenStepNum;
+        
         private static int _numWorldgenSteps;
 
         public LoadWorldMap([NotNull] Harmony instance) : base(instance)
