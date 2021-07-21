@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using BetterLoading.Stage.SaveLoad;
 using UnityEngine;
 using Verse;
 
@@ -28,7 +29,7 @@ namespace BetterLoading
         internal static List<LoadingStage> BootLoadList = new List<LoadingStage>
         {
             //For all of these stages, vanilla just shows "..."
-            new StageInitMods(BetterLoadingMain.hInstance),
+            new StageInitMods(BetterLoadingMain.hInstance!),
             new StageReadXML(BetterLoadingMain.hInstance),
             new StageUnifyXML(BetterLoadingMain.hInstance),
             new StageApplyPatches(BetterLoadingMain.hInstance),
@@ -40,6 +41,22 @@ namespace BetterLoading
             new StageRunPostLoadPreFinalizeCallbacks(BetterLoadingMain.hInstance),
             new StageRunStaticCctors(BetterLoadingMain.hInstance),
             new StageRunPostFinalizeCallbacks(BetterLoadingMain.hInstance)
+        };
+        
+        /// <summary>
+        /// The load list used at game boot.
+        /// </summary>
+        internal static List<LoadingStage> LoadSaveFileLoadList = new List<LoadingStage>
+        {
+            //For all of these stages, vanilla just shows "..."
+            new LoadSmallComponents(BetterLoadingMain.hInstance!),
+            new LoadWorldMap(BetterLoadingMain.hInstance),
+            new FinalizeWorld(BetterLoadingMain.hInstance),
+            new LoadMaps(BetterLoadingMain.hInstance),
+            new SetUpCamera(BetterLoadingMain.hInstance),
+            new ResolveDefCrossRefs(BetterLoadingMain.hInstance),
+            new SpawnAllThings(BetterLoadingMain.hInstance),
+            new FinalizeGameState(BetterLoadingMain.hInstance)
         };
         
         private static Dictionary<Type, LoadingStage> _loadingStagesByType = new Dictionary<Type, LoadingStage>();
@@ -75,6 +92,13 @@ namespace BetterLoading
         private float bgLerp = 0f;
         private Texture2D? bgSolidColor;
         private Texture2D? bgContrastReducer;
+
+        public void StartSaveLoad()
+        {
+            Log.Message("[BetterLoading] Game Load detected, re-showing for save-load screen.");
+            _currentStage = LoadSaveFileLoadList[0];
+            shouldShow = true;
+        }
 
         public LoadingScreen()
         {
@@ -197,6 +221,8 @@ namespace BetterLoading
                 List<LoadingStage>? currentList = null;
                 if (BootLoadList.Contains(_currentStage))
                     currentList = BootLoadList;
+                else if (LoadSaveFileLoadList.Contains(_currentStage))
+                    currentList = LoadSaveFileLoadList;
 
                 if (currentList == null)
                 {
