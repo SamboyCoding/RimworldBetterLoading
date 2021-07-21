@@ -91,17 +91,12 @@ namespace BetterLoading
                 }
                 Log.Message("[BetterLoading] Injecting into main UI.");
                 LoadingScreen = Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
-                try
-                {
-                    LoadingScreen.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null) as Texture2D;
-                }
-                catch (Exception e)
-                {
-                    Log.Warning($"Failed to find or set background texture:\n{e}");
-                }
+                InitLoadingScreenBG();
 
                 hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
                     new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+
+                hInstance.Patch(AccessTools.Method(typeof(Game), nameof(Game.LoadGame)), new HarmonyMethod(typeof(BetterLoadingMain), nameof(OnGameLoadStart)));
 
                 BetterLoadingApi.OnGameLoadComplete += CreateTimingReport;
             }
@@ -113,6 +108,18 @@ namespace BetterLoading
             }
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
+        }
+
+        private static void InitLoadingScreenBG()
+        {
+            try
+            {
+                LoadingScreen!.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null) as Texture2D;
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"Failed to find or set background texture:\n{e}");
+            }
         }
 
         private void CreateTimingReport()
@@ -282,6 +289,14 @@ The assemblies that failed to load are:
         {
             //Disable when our load screen is shown
             return !LoadingScreen.shouldShow;
+        }
+
+        public static void OnGameLoadStart()
+        {
+            LoadingScreen = Object.FindObjectOfType<Root_Play>().gameObject
+                .AddComponent<LoadingScreen>();
+            InitLoadingScreenBG();
+            LoadingScreen!.StartSaveLoad();
         }
 
         private static void LogMsg(string message)
