@@ -37,7 +37,7 @@ namespace BetterLoading.Compat.HugsLib
         public override string? GetCurrentStepName()
         {
             if (!_hasEnumeratedChildren)
-                return "Waiting for HugsLib child mod list (probably vanilla being slow again)";
+                return "Waiting for HugsLib child mod list";
 
             if (_currentChildMod != null)
             {

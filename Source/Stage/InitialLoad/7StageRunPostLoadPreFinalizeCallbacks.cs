@@ -35,7 +35,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override string? GetCurrentStepName()
         {
             if (_currentAction == null)
-                return "Waiting for vanilla to start processing the task list... *yawn*";
+                return "Waiting for tasks to start being processed...";
 
             return (_currentAction.Method.DeclaringType?.FullName ?? "<unknown anonymous method>") + (_currentAction.Target != null ? $" ({_currentAction.Target})" : "");
         }

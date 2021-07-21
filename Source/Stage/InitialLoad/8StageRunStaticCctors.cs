@@ -34,7 +34,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string? GetCurrentStepName()
         {
-            var result = _modType?.FullName ?? "Waiting for vanilla to finish being slow...";
+            var result = _modType?.FullName ?? "Waiting...";
             if (HasError())
                 result = $"WARNING: An error has occurred previously, now processing {result}";
 
@@ -115,7 +115,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             try
             {
-                Log.Message("[BetterLoading] Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ". AND I didn't make the game freeze. Take that, Tynan.");
+                Log.Message("[BetterLoading] Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ".");
                 var existing = LongEventHandlerMirror.ToExecuteWhenFinished;
 
                 // Log.Message($"[BetterLoading] Restoring original job queue of {_queue.Count} item/s and merging with any just added (looking at you, Fluffy) ({existing.Count} entries have been added).");

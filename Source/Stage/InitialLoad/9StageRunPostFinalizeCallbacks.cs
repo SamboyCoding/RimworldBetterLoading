@@ -33,7 +33,7 @@ namespace BetterLoading.Stage.InitialLoad
         public override string? GetCurrentStepName()
         {
             if (_currentAction == null)
-                return "Waiting for vanilla... again";
+                return "Waiting...";
 
             return (_currentAction.Method.DeclaringType?.FullName ?? "<unknown anonymous method>") + (_currentAction.Target != null ? $" ({_currentAction.Target})" : "");
         }
