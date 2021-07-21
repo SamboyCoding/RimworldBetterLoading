@@ -10,22 +10,22 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override string GetStageName()
         {
-            throw new System.NotImplementedException();
+            return "Setting up final game controllers";
         }
 
         public override string? GetCurrentStepName()
         {
-            throw new System.NotImplementedException();
+            return null;
         }
 
         public override int GetCurrentProgress()
         {
-            throw new System.NotImplementedException();
+            return 0;
         }
 
         public override int GetMaximumProgress()
         {
-            throw new System.NotImplementedException();
+            return 1;
         }
 
         public override void DoPatching(Harmony instance)
