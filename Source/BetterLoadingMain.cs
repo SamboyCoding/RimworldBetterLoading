@@ -294,6 +294,13 @@ The assemblies that failed to load are:
 
         public static void OnGameLoadStart()
         {
+            if (ModLister.AllInstalledMods.FirstOrDefault(m => m.enabled && m.Name.ToLowerInvariant().Contains("multiplayer")) is {} mpMod)
+            {
+                Log.Warning($"[BetterLoading] Not showing game load/save screen because we've detected what we believe to be a multiplayer mod: {mpMod.Name}");
+                return;
+            }
+            
+            
             LoadingScreen = Object.FindObjectOfType<Root_Play>().gameObject
                 .AddComponent<LoadingScreen>();
             InitLoadingScreenBG();

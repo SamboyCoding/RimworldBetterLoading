@@ -139,7 +139,7 @@ namespace BetterLoading.Stage.InitialLoad
 
                 while (!_finishedExecuting)
                 {
-                    Thread.Sleep(2000); //Wait
+                    Thread.Sleep(200); //Wait
                 }
                 
                 Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors.");
