@@ -48,10 +48,10 @@ namespace BetterLoading.Stage.InitialLoad
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.CombineIntoUnifiedXML)),
-                new HarmonyMethod(typeof(StageUnifyXML), nameof(PreUnifyXML)));
+                new(typeof(StageUnifyXML), nameof(PreUnifyXML)));
             
             instance.Patch(AccessTools.Method(typeof(XmlDocument), "get_" + nameof(XmlDocument.DocumentElement)),
-                postfix: new HarmonyMethod(typeof(StageUnifyXML), nameof(PostGetDocumentElement)));
+                postfix: new(typeof(StageUnifyXML), nameof(PostGetDocumentElement)));
         }
 
         public static void PreUnifyXML(List<LoadableXmlAsset> xmls)

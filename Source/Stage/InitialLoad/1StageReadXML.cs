@@ -40,8 +40,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.LoadModXML)), new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new HarmonyMethod(typeof(StageReadXML), nameof(AlternativeLoadModXml)));
-            instance.Patch(AccessTools.Method(typeof(ModContentPack), nameof(ModContentPack.LoadDefs)), postfix: new HarmonyMethod(typeof(StageReadXML), nameof(OnLoadDefsComplete)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.LoadModXML)), new(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)), new(typeof(StageReadXML), nameof(AlternativeLoadModXml)));
+            instance.Patch(AccessTools.Method(typeof(ModContentPack), nameof(ModContentPack.LoadDefs)), postfix: new(typeof(StageReadXML), nameof(OnLoadDefsComplete)));
         }
 
         public override void BecomeActive()

@@ -55,16 +55,16 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(Map), nameof(Map.FinalizeLoading)), new HarmonyMethod(typeof(SpawnAllThings), nameof(OnMapStartFinalizing)), new HarmonyMethod(typeof(SpawnAllThings), nameof(OnMapFinishFinalizing)));
+            instance.Patch(AccessTools.Method(typeof(Map), nameof(Map.FinalizeLoading)), new(typeof(SpawnAllThings), nameof(OnMapStartFinalizing)), new(typeof(SpawnAllThings), nameof(OnMapFinishFinalizing)));
             
             //Things
             instance.Patch(
                 AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.Spawn), new[] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool)}),
-                new HarmonyMethod(typeof(SpawnAllThings), nameof(OnThingAboutToSpawn))
+                new(typeof(SpawnAllThings), nameof(OnThingAboutToSpawn))
             );
 
             //Buildings
-            instance.Patch(AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.SpawnBuildingAsPossible)), new HarmonyMethod(typeof(SpawnAllThings), nameof(OnThingAboutToSpawn)));
+            instance.Patch(AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.SpawnBuildingAsPossible)), new(typeof(SpawnAllThings), nameof(OnThingAboutToSpawn)));
         }
 
         public static void OnMapStartFinalizing()

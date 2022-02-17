@@ -60,8 +60,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
-            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new HarmonyMethod(typeof(StageRunPostFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new(typeof(StageRunPostFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new(typeof(StageRunPostFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
         }
 
         public static bool PreExecToExecWhenFinished(List<Action> ___toExecuteWhenFinished)

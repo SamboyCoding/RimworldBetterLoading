@@ -24,7 +24,7 @@ namespace BetterLoading.Stage.InitialLoad
             return "Reloading Def Databases";
         }
 
-        public override string? GetCurrentStepName()
+        public override string GetCurrentStepName()
         {
             return _currentDatabase?.FullName ?? "<initializing>";
         }
@@ -52,17 +52,18 @@ namespace BetterLoading.Stage.InitialLoad
         public override void BecomeInactive()
         {
             base.BecomeInactive();
-            LoadingScreen.MarkTipsNowAvailable();
+            Log.Message("[BetterLoading] Tips should now be available. Showing...");
+            LoadingScreenTipManager.GameTipDatabaseHasLoaded = true;
         }
 
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(
                 AccessTools.Method(typeof(GenGeneric), "MethodOnGenericType", new[] {typeof(Type), typeof(Type), typeof(string)}),
-                new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PreMOGT)),
-                new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PostMOGT)));
+                new(typeof(StageResolveDefDatabases), nameof(PreMOGT)),
+                new(typeof(StageResolveDefDatabases), nameof(PostMOGT)));
 
-            instance.Patch(AccessTools.Method(typeof(DefGenerator), nameof(DefGenerator.GenerateImpliedDefs_PostResolve)), new HarmonyMethod(typeof(StageResolveDefDatabases), nameof(PreGenImplied)));
+            instance.Patch(AccessTools.Method(typeof(DefGenerator), nameof(DefGenerator.GenerateImpliedDefs_PostResolve)), new(typeof(StageResolveDefDatabases), nameof(PreGenImplied)));
         }
 
         public static void PreMOGT(Type genericParam, string methodName)

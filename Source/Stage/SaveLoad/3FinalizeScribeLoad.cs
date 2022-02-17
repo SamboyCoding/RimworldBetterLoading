@@ -44,7 +44,7 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(ScribeLoader), nameof(ScribeLoader.FinalizeLoading)), postfix: new HarmonyMethod(typeof(FinalizeScribeLoad), nameof(OnResolvingComplete)));
+            instance.Patch(AccessTools.Method(typeof(ScribeLoader), nameof(ScribeLoader.FinalizeLoading)), postfix: new(typeof(FinalizeScribeLoad), nameof(OnResolvingComplete)));
         }
 
         public static void OnResolvingComplete()

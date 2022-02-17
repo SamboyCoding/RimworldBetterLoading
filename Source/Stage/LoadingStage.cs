@@ -6,7 +6,7 @@ namespace BetterLoading.Stage
 {
     public abstract class LoadingStage
     {
-        private static List<Type> _initializedStages = new List<Type>();
+        private static List<Type> _initializedStages = new();
         /// <summary>
         /// Required public no-args constructor
         /// </summary>

@@ -76,11 +76,11 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ApplyPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreApplyPatches)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ApplyPatches)), new(typeof(StageApplyPatches), nameof(PreApplyPatches)));
             
-            instance.Patch(AccessTools.PropertyGetter(typeof(ModContentPack), nameof(ModContentPack.Patches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PreLoadPatches)), new HarmonyMethod(typeof(StageApplyPatches), nameof(PostLoadPatches)));
+            instance.Patch(AccessTools.PropertyGetter(typeof(ModContentPack), nameof(ModContentPack.Patches)), new(typeof(StageApplyPatches), nameof(PreLoadPatches)), new(typeof(StageApplyPatches), nameof(PostLoadPatches)));
 
-            instance.Patch(AccessTools.Method(typeof(PatchOperation), nameof(PatchOperation.Apply)), postfix: new HarmonyMethod(typeof(StageApplyPatches), nameof(PostApplyPatch)));
+            instance.Patch(AccessTools.Method(typeof(PatchOperation), nameof(PatchOperation.Apply)), postfix: new(typeof(StageApplyPatches), nameof(PostApplyPatch)));
         }
 
         public static void PreApplyPatches()

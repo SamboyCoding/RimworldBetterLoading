@@ -54,7 +54,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(Activator), nameof(Activator.CreateInstance), new[] {typeof(Type), typeof(object[])}), new HarmonyMethod(typeof(StageInitMods), nameof(OnActivatorCreateInstance)));
+            instance.Patch(AccessTools.Method(typeof(Activator), nameof(Activator.CreateInstance), new[] {typeof(Type), typeof(object[])}), new(typeof(StageInitMods), nameof(OnActivatorCreateInstance)));
         }
 
         public override bool IsCompleted()
@@ -72,9 +72,7 @@ namespace BetterLoading.Stage.InitialLoad
         {
             if (_completed) return; //If we're done, don't go again.
             if (!typeof(Mod).IsAssignableFrom(type)) return; //If we're not constructing a mod bail out.
-            if (args.Length != 1 || !(args[0] is ModContentPack) && args[0] != null) return; //Check the constructor we're using matches the required pattern.
-
-            var pack = (ModContentPack) args[0];
+            if (args.Length != 1 || args[0] is not ModContentPack pack) return; //Check the constructor we're using matches the required pattern.
             // Log.Message($"[BetterLoading] Class {type?.FullName} is being created for mod {pack}");
 
             _currentModIdx++;

@@ -82,19 +82,19 @@ namespace BetterLoading.Compat.HugsLib
 
             var hlAssembly = LoadedModManager.RunningMods.First(m => m.Name == "HugsLib").assemblies.loadedAssemblies.Find(a => a.GetName().Name == "HugsLib");
 
-            var controllerType = hlAssembly.GetTypes().FirstOrDefault(t => t.Name == "HugsLibController") ?? throw new Exception("Type HugsLibController is missing");
+            var controllerType = hlAssembly.GetTypes().FirstOrDefault(t => t.Name == "HugsLibController") ?? throw new("Type HugsLibController is missing");
 
-            _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier") ?? throw new Exception("Property ModBase.ModIdentifier is missing");
+            _modIdentifierProperty = hlAssembly.GetTypes().First(t => t.Name == "ModBase").GetProperty("ModIdentifier") ?? throw new("Property ModBase.ModIdentifier is missing");
 
             Log.Message($"[BetterLoading:HugsLib Compat] Resolved required HugsLib types as follows: Controller: {controllerType.FullName} / Mod Identifier (Property): {_modIdentifierProperty.Name}");
 
             hInstance.Patch(
-                AccessTools.Method(controllerType, "LoadReloadInitialize") ?? throw new Exception("Method HugsLibController.LoadReloadInitialize is missing"),
-                postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostLRI))
+                AccessTools.Method(controllerType, "LoadReloadInitialize") ?? throw new("Method HugsLibController.LoadReloadInitialize is missing"),
+                postfix: new(typeof(StageHugsLibInit), nameof(PostLRI))
             );
             hInstance.Patch(
-                AccessTools.Method(controllerType, "EnumerateChildMods")  ?? throw new Exception("Method HugsLibController.EnumerateChildMods is missing"),
-                postfix: new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostEnumerateChildren))
+                AccessTools.Method(controllerType, "EnumerateChildMods")  ?? throw new("Method HugsLibController.EnumerateChildMods is missing"),
+                postfix: new(typeof(StageHugsLibInit), nameof(PostEnumerateChildren))
             );
 
             Log.Message("[BetterLoading:HugsLib Compat] Successfully blind-patched HugsLib.");
@@ -120,10 +120,10 @@ namespace BetterLoading.Compat.HugsLib
             foreach (var childMod in _children)
             {
                 if (childMod.GetType().DeclaresOwnMethod("Initialize"))
-                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "Initialize"), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreChildInit)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostChildInit)));
+                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "Initialize"), new(typeof(StageHugsLibInit), nameof(PreChildInit)), new(typeof(StageHugsLibInit), nameof(PostChildInit)));
 
                 if (childMod.GetType().DeclaresOwnMethod("DefsLoaded"))
-                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "DefsLoaded"), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new HarmonyMethod(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
+                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "DefsLoaded"), new(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
             }
         }
 

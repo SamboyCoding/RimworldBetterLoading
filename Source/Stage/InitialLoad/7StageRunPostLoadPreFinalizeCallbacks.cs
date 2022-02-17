@@ -62,8 +62,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new HarmonyMethod(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
-            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new HarmonyMethod(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));
+            instance.Patch(AccessTools.Method(typeof(LongEventHandler), "UpdateCurrentSynchronousEvent"), new(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreUpdateCurrentSynchronousEvent)));
         }
 
         public static bool PreExecToExecWhenFinished(List<Action> ___toExecuteWhenFinished)
@@ -82,7 +82,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             _hasBeenCalled = true;
 
-            var targetTypeName = typeof(PlayDataLoader).FullName ?? throw new Exception("WTF where has playdataloader gone.");
+            var targetTypeName = typeof(PlayDataLoader).FullName ?? throw new("WTF where has playdataloader gone.");
 
             // var last = ___toExecuteWhenFinished.Skip(2900).Take(int.MaxValue).Select(i => i.Method.DeclaringType).ToList();
             // Debug.Log($"BL Debug: last few task defining types: {last.ToStringSafeEnumerable()}");

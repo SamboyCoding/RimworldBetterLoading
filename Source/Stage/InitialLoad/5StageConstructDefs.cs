@@ -19,8 +19,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         private static StageConstructDefs inst;
 
-        private static readonly ConcurrentDictionary<Type, Func<XmlNode, bool, object>> objectFromXmlMethods = new ConcurrentDictionary<Type, Func<XmlNode, bool, object>>();
-        private static ConcurrentDictionary<TypeCacheKey, Type> typeCache = new ConcurrentDictionary<TypeCacheKey, Type>(EqualityComparer<TypeCacheKey>.Default);
+        private static readonly ConcurrentDictionary<Type, Func<XmlNode, bool, object>> objectFromXmlMethods = new();
+        private static ConcurrentDictionary<TypeCacheKey, Type> typeCache = new(EqualityComparer<TypeCacheKey>.Default);
 
         private static MethodInfo GetTypeInternal = typeof(GenTypes).GetMethod("GetTypeInAnyAssemblyInt", BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -73,9 +73,9 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreParseProcXml)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PostParseProcessXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
-            instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new HarmonyMethod(typeof(StageConstructDefs), nameof(PreDefFromNode)));
-            instance.Patch(AccessTools.Method(typeof(GenTypes), nameof(GenTypes.GetTypeInAnyAssembly)),  new HarmonyMethod(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)),new HarmonyMethod(typeof(StageConstructDefs), nameof(ThreadSafeGetTypeInAnyAssembly)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new(typeof(StageConstructDefs), nameof(PreParseProcXml)), new(typeof(StageConstructDefs), nameof(PostParseProcessXml))/*, new HarmonyMethod(typeof(StageConstructDefs), nameof(ParallelParseAndProcessXML))*/);
+            instance.Patch(AccessTools.Method(typeof(DirectXmlLoader), nameof(DirectXmlLoader.DefFromNode)), new(typeof(StageConstructDefs), nameof(PreDefFromNode)));
+            instance.Patch(AccessTools.Method(typeof(GenTypes), nameof(GenTypes.GetTypeInAnyAssembly)),  new(typeof(Utils), nameof(Utils.HarmonyPatchCancelMethod)),new(typeof(StageConstructDefs), nameof(ThreadSafeGetTypeInAnyAssembly)));
         }
 
         public static void ThreadSafeGetTypeInAnyAssembly(string typeName, string namespaceIfAmbiguous, ref Type __result)

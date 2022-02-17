@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using BetterLoading.Compat;
 using BetterLoading.Stage.SaveLoad;
 using HarmonyLib;
-using JetBrains.Annotations;
 using RimWorld;
-using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Object = UnityEngine.Object;
@@ -17,10 +16,10 @@ namespace BetterLoading
     public sealed class BetterLoadingMain : Mod
     {
         public static ModContentPack? ourContentPack;
-        public static Harmony? hInstance;
+        public static Harmony hInstance = new("me.samboycoding.blm");
         public static LoadingScreen? LoadingScreen;
 
-        public static readonly Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new Dictionary<ModContentPack, List<DllLoadError>>();
+        public static readonly Dictionary<ModContentPack, List<DllLoadError>> DllPathsThatFailedToLoad = new();
 
         public class DllLoadError
         {
@@ -32,10 +31,9 @@ namespace BetterLoading
         {
             ourContentPack = content;
 
-            hInstance = new Harmony("me.samboycoding.blm");
             if (Camera.main == null) return; //Just in case
-            
-            hInstance.Patch(AccessTools.Method(typeof(PlayDataLoader), nameof(PlayDataLoader.ClearAllPlayData)), new HarmonyMethod(typeof(BetterLoadingMain), nameof(OnClearPlayData)));
+
+            hInstance.Patch(AccessTools.Method(typeof(PlayDataLoader), nameof(PlayDataLoader.ClearAllPlayData)), new(typeof(BetterLoadingMain), nameof(OnClearPlayData)));
 
             LogMsg("[BetterLoading] Verifying all mods loaded properly...");
 
@@ -73,7 +71,7 @@ namespace BetterLoading
                         )
                         .ToList();
 
-                    Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {string.Join(", ",didntLoad)}");
+                    Log.Error($"[BetterLoading] {dllsThatShouldBeLoaded.Count - dllsActuallyLoaded.Count} assemblies for {pack.Name} failed to load! The ones that didn't load are: {string.Join(", ", didntLoad)}");
                     Log.Error($"[BetterLoading] Got {failures.Count} messages that identify those failures.");
 
                     DllPathsThatFailedToLoad[pack] = failures;
@@ -82,6 +80,9 @@ namespace BetterLoading
 
             if (DllPathsThatFailedToLoad.Count == 0)
             {
+                BetterLoadingConfigManager.Load();
+                ShitRimworldSaysCompat.PatchShitRimworldSaysIfPresent();
+
                 //Prepatcher re-launches the game...
                 var alreadyCreatedLoadScreens = Object.FindObjectsOfType<Component>().Where(c => c.GetType().FullName.Contains("LoadingScreen")).ToList();
                 if (alreadyCreatedLoadScreens.Count > 0)
@@ -90,14 +91,15 @@ namespace BetterLoading
                     alreadyCreatedLoadScreens.ForEach(Object.Destroy);
                     LoadingScreen = null;
                 }
+
                 Log.Message("[BetterLoading] Injecting into main UI.");
                 LoadingScreen = Object.FindObjectOfType<Root_Entry>().gameObject.AddComponent<LoadingScreen>();
-                InitLoadingScreenBG();
+                InitLoadingScreenBackground();
 
                 hInstance.Patch(AccessTools.Method(typeof(LongEventHandler), nameof(LongEventHandler.LongEventsOnGUI)),
-                    new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
+                    new(typeof(BetterLoadingMain), nameof(DisableVanillaLoadScreen)));
 
-                hInstance.Patch(AccessTools.Method(typeof(Game), nameof(Game.LoadGame)), new HarmonyMethod(typeof(BetterLoadingMain), nameof(OnGameLoadStart)));
+                hInstance.Patch(AccessTools.Method(typeof(Game), nameof(Game.LoadGame)), new(typeof(BetterLoadingMain), nameof(OnGameLoadStart)));
 
                 BetterLoadingApi.OnGameLoadComplete += CreateTimingReport;
             }
@@ -105,13 +107,13 @@ namespace BetterLoading
             {
                 Log.Message("[BetterLoading] Not showing loading screen, not all mods loaded successfully so we would be unstable.");
 
-                hInstance.Patch(AccessTools.Method(typeof(UIRoot_Entry), nameof(UIRoot_Entry.Init)), postfix: new HarmonyMethod(typeof(BetterLoadingMain), nameof(DisplayFailedLoadDialog)));
+                hInstance.Patch(AccessTools.Method(typeof(UIRoot_Entry), nameof(UIRoot_Entry.Init)), postfix: new(typeof(BetterLoadingMain), nameof(DisplayFailedLoadDialog)));
             }
 
             //Harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 
-        private static void InitLoadingScreenBG()
+        private static void InitLoadingScreenBackground()
         {
             try
             {
@@ -131,7 +133,7 @@ namespace BetterLoading
             var timeRunningCctors = TimeSpan.FromTicks(GlobalTimingData.TicksStartedPostFinalize - GlobalTimingData.TicksStartedCctors);
             var timeRunningPostFinalize = TimeSpan.FromTicks(GlobalTimingData.TicksFinishedPostFinalize - GlobalTimingData.TicksStartedPostFinalize);
             var totalLoadTime = TimeSpan.FromTicks(DateTime.UtcNow.Ticks - GlobalTimingData.TicksStarted);
-            
+
             Log.Message($"[BetterLoading] Game load has finished. Timing data follows:\n" +
                         $"Spent {timeBuildingXml.TotalMilliseconds}ms reading, building, and patching XML tree.\n" +
                         $"Spent {timeConstructingDefs.TotalMilliseconds}ms turning XML into def instances.\n" +
@@ -170,7 +172,7 @@ The assemblies that failed to load are:
                         Log.Warning($"[BetterLoading] \t{dllLoadError.dllName}.dll failed to load, but we couldn't work out why. Possibly intentional? For safety reasons, the loading screen will not show.");
                         continue;
                     }
-                    
+
                     var loaderErrors = GetLoaderErrors(dllLoadError.reasonMessage.text);
                     if (loaderErrors.Count > 0)
                     {
@@ -198,14 +200,14 @@ The assemblies that failed to load are:
 
                         if (dependentMods.Count > 0)
                         {
-                            Log.Warning($"[BetterLoading] \t{dllLoadError.dllName} appears to have a dependency on these mod(s): {dependentMods.Select(m => m.Name).ToStringSafeEnumerable()}");
+                            Log.Warning($"[BetterLoading] \t{dllLoadError.dllName} appears to have a dependency on these mod(s): {dependentMods.Select(m => m?.Name).ToStringSafeEnumerable()}");
 
-                            var notLoaded = dependentMods.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod.Name)).ToList();
+                            var notLoaded = dependentMods.Where(requiredMod => LoadedModManager.RunningMods.All(runningMod => runningMod.Name != requiredMod?.Name)).ToList();
                             if (notLoaded.Count > 0)
-                                notLoaded.ForEach(m => Log.Warning($"[BetterLoading] \t{modThatFailedLoad.Name} depends on {m.Name} which is not enabled, so it didn't load properly."));
+                                notLoaded.ForEach(m => Log.Warning($"[BetterLoading] \t{modThatFailedLoad.Name} depends on {m?.Name} which is not enabled, so it didn't load properly."));
 
                             var modsLoadedAfterTarget = LoadedModManager.RunningMods.Skip(LoadedModManager.RunningModsListForReading.FindIndex(i => i.Name == modThatFailedLoad.Name)).Take(int.MaxValue).ToList();
-                            var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => dependentMods.Any(dep => dep.Name == loadedAfter.Name)).ToList();
+                            var depsLoadedAfterDependent = modsLoadedAfterTarget.Where(loadedAfter => dependentMods.Any(dep => dep?.Name == loadedAfter.Name)).ToList();
                             if (depsLoadedAfterDependent.Count > 0)
                                 depsLoadedAfterDependent.ForEach(m => Log.Warning($"[BetterLoading] \t{modThatFailedLoad.Name} is loaded before {m.Name} but depends on it, so must be loaded after. It didn't load properly because of this."));
                         }
@@ -216,7 +218,7 @@ The assemblies that failed to load are:
                                 .Where(asm => ModLister.AllInstalledMods.All(m => !ModContainsAssembly(m, asm)))
                                 .Select(asm => $"{asm}.dll")
                                 .ToList();
-                            
+
                             Log.Warning($"[BetterLoading] \t{dllLoadError.dllName} (also) depends on these DLL(s) which couldn't be found in any installed mods: {notInAnyMods.ToStringSafeEnumerable()}");
                         }
                     }
@@ -231,9 +233,9 @@ The assemblies that failed to load are:
             var searchPaths = new List<string>();
 
             //Sourced from ModContentPack#InitLoadFolders
-            if (mod.LoadFoldersForVersion(VersionControl.CurrentVersionStringWithoutBuild) is {} forBuild)
+            if (mod.LoadFoldersForVersion(VersionControl.CurrentVersionStringWithoutBuild) is { } forBuild)
                 searchPaths.AddRange(forBuild.Select(p => p.folderName));
-            if (mod.LoadFoldersForVersion("default") is {} forDefault)
+            if (mod.LoadFoldersForVersion("default") is { } forDefault)
                 searchPaths.AddRange(forDefault.Select(p => p.folderName));
 
             if (searchPaths.Count == 0)
@@ -264,7 +266,7 @@ The assemblies that failed to load are:
 
         private static List<(string type, string asm)> GetLoaderErrors(string messageText)
         {
-            if (!messageText.Contains("Loader exceptions:")) return new List<(string type, string asm)>();
+            if (!messageText.Contains("Loader exceptions:")) return new();
 
             try
             {
@@ -272,7 +274,7 @@ The assemblies that failed to load are:
                 var split = messageText.Split(new[] {"=> "}, StringSplitOptions.None).Skip(1).Take(int.MaxValue).ToList();
 
                 var target = "from typeref, class/assembly ";
-                var errorDetail = split.Select(e => e.Substring(e.IndexOf(target) + target.Length)).ToList();
+                var errorDetail = split.Select(e => e.Substring(e.IndexOf(target, StringComparison.Ordinal) + target.Length)).ToList();
 
                 var attemptedLoadOf = errorDetail.Select(e => e.Split(',')).Select(arr => (type: arr[0].Trim(), asm: arr[1].Trim())).ToList();
 
@@ -282,28 +284,28 @@ The assemblies that failed to load are:
             {
                 //We really don't want this to fail, it's just gonna be a pain
                 Log.Warning("[BetterLoading] Failed to scrape Loader Errors.");
-                return new List<(string type, string asm)>();
+                return new();
             }
         }
 
         public static bool DisableVanillaLoadScreen()
         {
             //Disable when our load screen is shown
-            return !LoadingScreen.shouldShow;
+            return !LoadingScreen!.shouldShow;
         }
 
         public static void OnGameLoadStart()
         {
-            if (ModLister.AllInstalledMods.FirstOrDefault(m => m.enabled && m.Name.ToLowerInvariant().Contains("multiplayer")) is {} mpMod)
+            if (ModLister.AllInstalledMods.FirstOrDefault(m => m.enabled && m.Name.ToLowerInvariant().Contains("multiplayer")) is { } mpMod)
             {
                 Log.Warning($"[BetterLoading] Not showing game load/save screen because we've detected what we believe to be a multiplayer mod: {mpMod.Name}");
                 return;
             }
-            
-            
+
+
             LoadingScreen = Object.FindObjectOfType<Root_Play>().gameObject
                 .AddComponent<LoadingScreen>();
-            InitLoadingScreenBG();
+            InitLoadingScreenBackground();
 
             //Try and work out how many maps we have
             LoadMaps.CountMaps();
@@ -319,45 +321,13 @@ The assemblies that failed to load are:
         public static void OnClearPlayData()
         {
             //Reset our harmony patches.
-            hInstance?.UnpatchAll("me.samboycoding.blm");
-            
-            if(LoadingScreen == null)
+            hInstance.UnpatchAll("me.samboycoding.blm");
+
+            if (LoadingScreen == null)
                 return;
-            
+
             //Destroy loading screen.
             Object.Destroy(LoadingScreen);
         }
-
-        //Following code kept as reference
-
-        #region Save Game Loading Patches
-
-        [HarmonyPatch(typeof(WorldGenStep))]
-        [HarmonyPatch(nameof(WorldGenStep.GenerateFromScribe))]
-        [UsedImplicitly]
-        public class WorldGenStepExecPatch
-        {
-            [UsedImplicitly]
-            public static void Prefix(WorldGenStep __instance)
-            {
-                LoadingScreen.Instance.numWorldGeneratorsRun++;
-                LoadingScreen.Instance.currentWorldGenStep = __instance;
-            }
-        }
-
-        [HarmonyPatch(typeof(WorldGenStep))]
-        [HarmonyPatch(nameof(WorldGenStep.GenerateWithoutWorldData))]
-        [UsedImplicitly]
-        public class WorldGenStepExecPatch2
-        {
-            [UsedImplicitly]
-            public static void Prefix(WorldGenStep __instance)
-            {
-                LoadingScreen.Instance.numWorldGeneratorsRun++;
-                LoadingScreen.Instance.currentWorldGenStep = __instance;
-            }
-        }
-
-        #endregion
     }
 }

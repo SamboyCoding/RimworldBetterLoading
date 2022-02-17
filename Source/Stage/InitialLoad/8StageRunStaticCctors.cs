@@ -58,7 +58,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreCallAll)));
+            instance.Patch(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)), new(typeof(StageRunStaticCctors), nameof(PreCallAll)));
             // instance.Patch(AccessTools.Method(typeof(RuntimeHelpers), nameof(RuntimeHelpers.RunClassConstructor), new []{typeof(RuntimeTypeHandle)}), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreRunClassConstructor)));
         }
 
@@ -181,7 +181,7 @@ namespace BetterLoading.Stage.InitialLoad
             _queue = result;
 
             // Log.Message($"[BetterLoading]     Updating field in LEH to a new list of size {result.Count}...", true);
-            LongEventHandlerMirror.ToExecuteWhenFinished = new List<Action>();
+            LongEventHandlerMirror.ToExecuteWhenFinished = new();
 
             LongEventHandler.QueueLongEvent(WaitForStaticCtors, null, true, null);
 

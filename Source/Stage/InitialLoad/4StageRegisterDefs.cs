@@ -54,8 +54,8 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreParseProcXml)));
-            instance.Patch(AccessTools.Method(typeof(XmlInheritance), nameof(XmlInheritance.TryRegister)), new HarmonyMethod(typeof(StageRegisterDefs), nameof(PreRegisterDef)));
+            instance.Patch(AccessTools.Method(typeof(LoadedModManager), nameof(LoadedModManager.ParseAndProcessXML)), new(typeof(StageRegisterDefs), nameof(PreParseProcXml)));
+            instance.Patch(AccessTools.Method(typeof(XmlInheritance), nameof(XmlInheritance.TryRegister)), new(typeof(StageRegisterDefs), nameof(PreRegisterDef)));
         }
 
         public static void PreParseProcXml(XmlDocument xmlDoc)

@@ -98,10 +98,10 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(Map), nameof(Map.ExposeData)), new HarmonyMethod(typeof(LoadMaps), nameof(OnMapLoadStart)));
-            instance.Patch(AccessTools.Method(typeof(Map), "ExposeComponents"), new HarmonyMethod(typeof(LoadMaps), nameof(OnMapComponentsLoadStart)));
-            instance.Patch(AccessTools.Method(typeof(MapFileCompressor), nameof(MapFileCompressor.ExposeData)), new HarmonyMethod(typeof(LoadMaps), nameof(OnMapCompressedDataLoadStart)), new HarmonyMethod(typeof(LoadMaps), nameof(OnMapCompressedDataLoadEnd)));
-            instance.Patch(AccessTools.Method(typeof(CameraDriver), nameof(CameraDriver.Expose)), postfix: new HarmonyMethod(typeof(LoadMaps), nameof(OnAllMapsLoaded)));
+            instance.Patch(AccessTools.Method(typeof(Map), nameof(Map.ExposeData)), new(typeof(LoadMaps), nameof(OnMapLoadStart)));
+            instance.Patch(AccessTools.Method(typeof(Map), "ExposeComponents"), new(typeof(LoadMaps), nameof(OnMapComponentsLoadStart)));
+            instance.Patch(AccessTools.Method(typeof(MapFileCompressor), nameof(MapFileCompressor.ExposeData)), new(typeof(LoadMaps), nameof(OnMapCompressedDataLoadStart)), new(typeof(LoadMaps), nameof(OnMapCompressedDataLoadEnd)));
+            instance.Patch(AccessTools.Method(typeof(CameraDriver), nameof(CameraDriver.Expose)), postfix: new(typeof(LoadMaps), nameof(OnAllMapsLoaded)));
         }
         
         public static void OnMapLoadStart(Map __instance)

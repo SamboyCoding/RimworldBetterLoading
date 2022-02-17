@@ -44,7 +44,7 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(World), nameof(World.ExposeData)), new HarmonyMethod(typeof(LoadSmallComponents), nameof(OnLoadWorldStart)));
+            instance.Patch(AccessTools.Method(typeof(World), nameof(World.ExposeData)), new(typeof(LoadSmallComponents), nameof(OnLoadWorldStart)));
         }
 
         public static void OnLoadWorldStart()

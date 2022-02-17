@@ -62,10 +62,10 @@ namespace BetterLoading.Stage.SaveLoad
 
         public override void DoPatching(Harmony instance)
         {
-            instance.Patch(AccessTools.Method(typeof(World), nameof(World.ExposeData)), postfix: new HarmonyMethod(typeof(LoadWorldMap), nameof(OnLoadWorldEnd)));
-            instance.Patch(AccessTools.Method(typeof(WorldGenerator), nameof(WorldGenerator.GenerateFromScribe)), new HarmonyMethod(typeof(LoadWorldMap), nameof(OnStartLoadGeneratedData)));
-            instance.Patch(AccessTools.Method(typeof(WorldGenerator), nameof(WorldGenerator.GenerateWithoutWorldData)), new HarmonyMethod(typeof(LoadWorldMap), nameof(OnStartGenerateFreshData)));
-            instance.Patch(AccessTools.Method(typeof(World), nameof(World.FinalizeInit)), postfix: new HarmonyMethod(typeof(LoadWorldMap), nameof(OnFinalizeWorldInitEnd)));
+            instance.Patch(AccessTools.Method(typeof(World), nameof(World.ExposeData)), postfix: new(typeof(LoadWorldMap), nameof(OnLoadWorldEnd)));
+            instance.Patch(AccessTools.Method(typeof(WorldGenerator), nameof(WorldGenerator.GenerateFromScribe)), new(typeof(LoadWorldMap), nameof(OnStartLoadGeneratedData)));
+            instance.Patch(AccessTools.Method(typeof(WorldGenerator), nameof(WorldGenerator.GenerateWithoutWorldData)), new(typeof(LoadWorldMap), nameof(OnStartGenerateFreshData)));
+            instance.Patch(AccessTools.Method(typeof(World), nameof(World.FinalizeInit)), postfix: new(typeof(LoadWorldMap), nameof(OnFinalizeWorldInitEnd)));
         }
 
         public static void OnStartLoadGeneratedData()
