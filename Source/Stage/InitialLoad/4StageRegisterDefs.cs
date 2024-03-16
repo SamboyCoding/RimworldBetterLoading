@@ -10,7 +10,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numDefsToRegister = 1;
         private static int _currentDefNum;
 
-        private static StageRegisterDefs inst;
+        private static StageRegisterDefs? inst;
         
         public StageRegisterDefs(Harmony instance) : base(instance)
         {

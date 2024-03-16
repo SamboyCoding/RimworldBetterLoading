@@ -8,7 +8,7 @@ namespace BetterLoading.Stage.InitialLoad
 {
     public class StageApplyPatches : LoadingStage
     {
-        private static List<ModContentPack> _modList;
+        private static List<ModContentPack> _modList = null!;
         private static ModContentPack? _currentMod;
         private static int _currentModNum;
 
@@ -16,7 +16,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numPatches = -1;
         private static int _currentPatch;
 
-        private static StageApplyPatches inst;
+        private static StageApplyPatches? inst;
         private static bool _hasFinished;
 
         public StageApplyPatches(Harmony instance) : base(instance)

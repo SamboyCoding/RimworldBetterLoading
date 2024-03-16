@@ -8,8 +8,14 @@ namespace BetterLoading
     {
         internal static readonly List<StageTimingData> ExecutedStages = new();
         
-        public DateTime start;
-        public DateTime end;
-        public LoadingStage stage;
+        public readonly DateTime Start;
+        public DateTime End;
+        public readonly LoadingStage Stage;
+
+        public StageTimingData(DateTime start, LoadingStage stage)
+        {
+            Start = start;
+            Stage = stage;
+        }
     }
 }

@@ -9,7 +9,6 @@ namespace BetterLoading
 {
     public static class LoadingScreenTipManager
     {
-        private static bool _hasAttemptedToLoadTips;
         private static bool _tipDatabaseHasLoadedBackingField;
         private static bool _hideVanillaTipsBackingField;
 
@@ -42,7 +41,6 @@ namespace BetterLoading
 
         public static void OnAvailableTipSetChanged()
         {
-            _hasAttemptedToLoadTips = true;
 
             Tips.Clear();
             

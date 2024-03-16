@@ -13,7 +13,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numDatabases = 1;
         private static int _currentDatabaseNum;
 
-        private static StageResolveDefDatabases inst;
+        private static StageResolveDefDatabases? inst;
 
         public StageResolveDefDatabases(Harmony instance) : base(instance)
         {

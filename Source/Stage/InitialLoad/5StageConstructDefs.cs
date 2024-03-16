@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Xml;
 using HarmonyLib;
-using UnityEngine;
 using Verse;
 
 namespace BetterLoading.Stage.InitialLoad
@@ -15,14 +14,14 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numDefsToResolve = 1;
         private static int _currentDefNum;
         private static bool _shouldCount;
-        private static LoadableXmlAsset _asset;
+        private static LoadableXmlAsset? _asset;
 
-        private static StageConstructDefs inst;
+        private static StageConstructDefs? inst;
 
         private static readonly ConcurrentDictionary<Type, Func<XmlNode, bool, object>> objectFromXmlMethods = new();
         private static ConcurrentDictionary<TypeCacheKey, Type> typeCache = new(EqualityComparer<TypeCacheKey>.Default);
 
-        private static MethodInfo GetTypeInternal = typeof(GenTypes).GetMethod("GetTypeInAnyAssemblyInt", BindingFlags.Static | BindingFlags.NonPublic);
+        private static MethodInfo GetTypeInternal = typeof(GenTypes).GetMethod("GetTypeInAnyAssemblyInt", BindingFlags.Static | BindingFlags.NonPublic) ?? throw new Exception("Failed to find GetTypeInAnyAssemblyInt");
 
 
         public StageConstructDefs(Harmony instance) : base(instance)
@@ -53,7 +52,7 @@ namespace BetterLoading.Stage.InitialLoad
             GlobalTimingData.TicksFinishedConstructingDefs = DateTime.UtcNow.Ticks;
         }
 
-        public override string? GetCurrentStepName()
+        public override string GetCurrentStepName()
         {
             if (_asset?.name == null)
                 return "<initializing...>";
@@ -114,9 +113,9 @@ namespace BetterLoading.Stage.InitialLoad
             _currentDefNum = _numDefsToResolve;
         }
 
-        public static void ParallelParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
+        public static void ParallelParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset?> assetlookup)
         {
-            var xmlNodeList = xmlDoc.DocumentElement.ChildNodes.Cast<XmlNode>().ToList();
+            var xmlNodeList = xmlDoc.DocumentElement!.ChildNodes.Cast<XmlNode>().ToList();
 
             //Changed from vanilla in that it's parallel and doesn't have any DeepProfiling 
             xmlNodeList
@@ -132,7 +131,7 @@ namespace BetterLoading.Stage.InitialLoad
             try
             {
                 var processedDefs = xmlNodeList.AsParallel()
-                    .Select(node => (node, assetlookup.TryGetValue(node)))
+                    .Select(node => (node, assetlookup.TryGetValue(node)!))
                     .Select(tuple =>
                     {
                         var (node, asset) = tuple;

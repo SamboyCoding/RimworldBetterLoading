@@ -25,6 +25,12 @@ namespace BetterLoading
         {
             public string dllName;
             public LogMessage? reasonMessage;
+
+            public DllLoadError(string dllName, LogMessage? reasonMessage)
+            {
+                this.dllName = dllName;
+                this.reasonMessage = reasonMessage;
+            }
         }
 
         public BetterLoadingMain(ModContentPack content) : base(content)
@@ -62,12 +68,7 @@ namespace BetterLoading
                     var failures = didntLoad
                         .Select(Path.GetFileNameWithoutExtension)
                         .Select(
-                            filename =>
-                                new DllLoadError
-                                {
-                                    dllName = filename,
-                                    reasonMessage = loadFailures.FirstOrDefault(msg => msg.text.Contains($"assembly {filename}"))
-                                }
+                            filename => new DllLoadError(filename, loadFailures.FirstOrDefault(msg => msg.text.Contains($"assembly {filename}")))
                         )
                         .ToList();
 

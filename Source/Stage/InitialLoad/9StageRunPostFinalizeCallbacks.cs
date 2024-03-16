@@ -92,7 +92,7 @@ namespace BetterLoading.Stage.InitialLoad
             var initialNumTasksToRun = _numTasksToRun;
             Log.Message($"[BetterLoading] Processing {initialNumTasksToRun} post-finalize tasks.");
 
-            BetterLoadingMain.LoadingScreen.StartCoroutine
+            BetterLoadingMain.LoadingScreen!.StartCoroutine
             (
                 ToExecuteWhenFinishedHandler.ExecuteToExecuteWhenFinishedTheGoodVersion
                 (

@@ -8,7 +8,7 @@ namespace BetterLoading.Stage.SaveLoad
         public static int NumMaps;
 
         private static int _currMapNum = -1;
-        private static Map _currMap;
+        private static Map? _currMap;
 
         private static bool _currMapInitialized;
         private static bool _currMapLoadedComponents;
@@ -33,7 +33,7 @@ namespace BetterLoading.Stage.SaveLoad
             }
         }
         
-        public LoadMaps([NotNull] Harmony instance) : base(instance)
+        public LoadMaps(Harmony instance) : base(instance)
         {
         }
 
@@ -42,7 +42,7 @@ namespace BetterLoading.Stage.SaveLoad
             return "Loading Maps";
         }
 
-        public override string? GetCurrentStepName()
+        public override string GetCurrentStepName()
         {
             if (_currMapNum == -1)
                 return "Waiting...";

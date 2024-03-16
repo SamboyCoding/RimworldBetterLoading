@@ -80,11 +80,7 @@ namespace BetterLoading
             BootLoadList.ForEach(s => _loadingStagesByType[s.GetType()] = s);
             
             _currentStage.BecomeActive();
-            StageTimingData.ExecutedStages.Add(new()
-            {
-                start = DateTime.Now,
-                stage = _currentStage
-            });
+            StageTimingData.ExecutedStages.Add(new(DateTime.Now, _currentStage));
         }
         
         internal static void RegisterStageInstance<T>(T stage) where T: LoadingStage
@@ -229,7 +225,7 @@ namespace BetterLoading
                         Log.Error($"[BetterLoading] The stage {_currentStage} errored during BecomeInactive: {e}");
                     }
 
-                    StageTimingData.ExecutedStages.Last().end = DateTime.Now;
+                    StageTimingData.ExecutedStages.Last().End = DateTime.Now;
 
                     _currentStage = currentList[idx + 1];
                     try
@@ -242,11 +238,7 @@ namespace BetterLoading
                         Log.Error($"[BetterLoading] The stage {_currentStage} errored during BecomeActive: {e}");
                     }
 
-                    StageTimingData.ExecutedStages.Add(new()
-                    {
-                        start = DateTime.Now,
-                        stage = _currentStage
-                    });
+                    StageTimingData.ExecutedStages.Add(new(DateTime.Now, _currentStage));
                     idx++;
                 }
 

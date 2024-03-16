@@ -20,7 +20,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static bool _finishedExecuting;
         private static bool _done;
 
-        private static StageRunPostLoadPreFinalizeCallbacks inst;
+        private static StageRunPostLoadPreFinalizeCallbacks? inst;
 
 
         public StageRunPostLoadPreFinalizeCallbacks(Harmony instance) : base(instance)
@@ -116,7 +116,7 @@ namespace BetterLoading.Stage.InitialLoad
 
             LongEventHandlerMirror.ToExecuteWhenFinished = remainder;
 
-            BetterLoadingMain.LoadingScreen.StartCoroutine
+            BetterLoadingMain.LoadingScreen!.StartCoroutine
             (
                 ToExecuteWhenFinishedHandler.ExecuteToExecuteWhenFinishedTheGoodVersion
                 (

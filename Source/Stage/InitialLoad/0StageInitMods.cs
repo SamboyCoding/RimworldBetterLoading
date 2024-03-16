@@ -14,7 +14,7 @@ namespace BetterLoading.Stage.InitialLoad
         private static int _numMods = int.MaxValue;
 
         private static int _currentModIdx = typeof(Mod).InstantiableDescendantsAndSelf().FirstIndexOf(t => t == typeof(BetterLoadingMain)) + 1;
-        private static ModContentPack _currentMod = BetterLoadingMain.ourContentPack;
+        private static ModContentPack _currentMod = BetterLoadingMain.ourContentPack!;
         private static bool _completed;
 
         private static StageInitMods? inst;

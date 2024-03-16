@@ -88,6 +88,12 @@ namespace BetterLoading.Stage.InitialLoad
 
         public static IEnumerator StaticConstructAll()
         {
+            if(_toRun == null)
+                throw new InvalidOperationException("StaticConstructAll called before _toRun was set!");
+            
+            if(_queue == null)
+                throw new InvalidOperationException("StaticConstructAll called before _queue was set!");
+            
             GlobalTimingData.TicksStartedCctors = DateTime.UtcNow.Ticks;
             Log.Message("[BetterLoading] Starting Antifreeze(tm) StaticConstructorCaller. Synchronizing retransmission chronicity...");
             Application.runInBackground = true;
@@ -164,7 +170,7 @@ namespace BetterLoading.Stage.InitialLoad
             // Log.Message("Static constructors? Oh, sit down, vanilla, I'll do it myself. Starting now, at " + DateTime.Now.ToLongTimeString(), true);
             _toRun = GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().ToList();
 
-            BetterLoadingMain.LoadingScreen.StartCoroutine(StaticConstructAll());
+            BetterLoadingMain.LoadingScreen!.StartCoroutine(StaticConstructAll());
 
             // Log.Message("[BetterLoading] Overriding LongEventHandler's toExecuteWhenFinished", true);
             

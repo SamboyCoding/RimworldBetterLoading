@@ -19,9 +19,9 @@ namespace BetterLoading.Compat.HugsLib
         private static int _numChildrenDefLoaded;
 
         private static object? _currentChildMod;
-        private static Harmony hInstance;
+        private static Harmony? hInstance;
 
-        private static PropertyInfo _modIdentifierProperty;
+        private static PropertyInfo _modIdentifierProperty = null!;
 
         private static StageHugsLibInit? inst;
 
@@ -120,10 +120,10 @@ namespace BetterLoading.Compat.HugsLib
             foreach (var childMod in _children)
             {
                 if (childMod.GetType().DeclaresOwnMethod("Initialize"))
-                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "Initialize"), new(typeof(StageHugsLibInit), nameof(PreChildInit)), new(typeof(StageHugsLibInit), nameof(PostChildInit)));
+                    hInstance!.Patch(AccessTools.Method(childMod.GetType(), "Initialize"), new(typeof(StageHugsLibInit), nameof(PreChildInit)), new(typeof(StageHugsLibInit), nameof(PostChildInit)));
 
                 if (childMod.GetType().DeclaresOwnMethod("DefsLoaded"))
-                    hInstance.Patch(AccessTools.Method(childMod.GetType(), "DefsLoaded"), new(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
+                    hInstance!.Patch(AccessTools.Method(childMod.GetType(), "DefsLoaded"), new(typeof(StageHugsLibInit), nameof(PreDefsLoaded)), new(typeof(StageHugsLibInit), nameof(PostDefsLoaded)));
             }
         }
 

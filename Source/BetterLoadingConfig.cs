@@ -5,20 +5,18 @@ namespace BetterLoading;
 
 public class BetterLoadingConfig
 {
-
-    public static BetterLoadingConfig CreateDefault()
-    {
-        return new()
-        {
-            TipCache = new()
-            {
-                Version = TipCacheConfig.SupportedVersion,
-            }
-        };
-    }
-    
     [TomlPrecedingComment("The TipCache caches information about loading screen tips so that they can be displayed as soon as the loading screen starts after the first run.")]
     public TipCacheConfig TipCache; 
+    
+    public BetterLoadingConfig()
+    {
+        TipCache = new();
+    }
+    
+    public static BetterLoadingConfig CreateDefault()
+    {
+        return new();
+    }
 
     [TomlDoNotInlineObject]
     public class TipCacheConfig
@@ -29,5 +27,10 @@ public class BetterLoadingConfig
         public int Version;
         [TomlPrecedingComment("The raw tip blob. NOT intended to be manually edited.")]
         public byte[] Tips = Array.Empty<byte>();
+        
+        public TipCacheConfig()
+        {
+            Version = SupportedVersion;
+        }
     }
 }

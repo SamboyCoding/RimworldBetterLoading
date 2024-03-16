@@ -71,7 +71,7 @@ namespace BetterLoading.Stage.InitialLoad
             }).ToList();
             
             Log.Message($"[BetterLoading] [Enhanced XML Load] Loaded {__result.Count} loadable assets.");
-            _currentPackIdx = inst._numPacks + 1;
+            _currentPackIdx = inst!._numPacks + 1;
         }
 
         public static void OnLoadDefsComplete(ModContentPack __instance)
