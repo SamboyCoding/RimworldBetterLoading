@@ -102,11 +102,11 @@ namespace BetterLoading.Stage.InitialLoad
             BetterLoadingApi.DispatchChange(inst);
         }
 
-        public static void PostLoadPatches(List<PatchOperation> ___patches)
+        public static void PostLoadPatches(IEnumerable<PatchOperation> __result)
         {
             if (_hasFinished) return;
             
-            _numPatches = ___patches.Count;
+            _numPatches = __result.Count();
             _currentPatch = 0;
             _loadingPatches = false;
             BetterLoadingApi.DispatchChange(inst);

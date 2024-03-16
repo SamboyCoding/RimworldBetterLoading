@@ -29,15 +29,21 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string GetStageName()
         {
-            return "Running Post Content Load Callbacks";
+            return "Running Pre-Static-Constructor Long Events";
         }
 
         public override string? GetCurrentStepName()
         {
             if (_currentAction == null)
                 return "Waiting for tasks to start being processed...";
+            
+            if(_currentAction is { Target: ModContentPack mcp, Method.Name: nameof(ModContentPack.ReloadContent) + "Int" })
+                return $"Reloading content for {mcp.Name}";
 
-            return (_currentAction.Method.DeclaringType?.FullName ?? "<unknown anonymous method>") + (_currentAction.Target != null ? $" ({_currentAction.Target})" : "");
+            var methodDeclaringType = _currentAction.Method.DeclaringType?.FullName ?? "<unknown anonymous method>";
+            var methodName = _currentAction.Method?.Name ?? "<unknown method>";
+            var target = _currentAction.Target != null ? $"{_currentAction.Target}" : "";
+            return $"{methodDeclaringType}::{methodName} (on instance {target})";
         }
 
         public override bool IsCompleted()
@@ -93,7 +99,13 @@ namespace BetterLoading.Stage.InitialLoad
             
             // Debug.Log($"BL Debug: types declared in PDL: {declaredInPDL.Select(a => a.Method).ToStringSafeEnumerable()}");
 
-            var targetMethodName = VersionControl.CurrentMinor == 3 ? "b__4_3" : "b__4_2";
+            var targetMethodName = VersionControl.CurrentMinor switch
+            {
+                2 => "b__4_2",
+                3 => "b__4_3",
+                4 => "b__4_5",
+                _ => throw new ArgumentOutOfRangeException()
+            };
 
             // Log.Message($"BL Debug: Tasks defined in PDL: {string.Join(", ", declaredInPDL.Select(task => task.Method.FullDescription()))}");
             
@@ -135,20 +147,18 @@ namespace BetterLoading.Stage.InitialLoad
             LongEventHandler.QueueLongEvent(() =>
             {
                 // Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-load actions are complete.");
-                Thread.Sleep(1000);
+                Thread.Sleep(0);
 
                 while (!_finishedExecuting)
                 {
-                    Thread.Sleep(200); //Wait
+                    Thread.Sleep(0); //Wait
                 }
                 
                 Log.Message($"[BetterLoading] Obtained synclock, assuming post-load actions are complete and starting static constructors.");
+                
+                _done = true;
 
                 runStaticCtors();
-
-                Thread.Sleep(0);
-
-                _done = true;
             }, null, false, null);
 
             return false;

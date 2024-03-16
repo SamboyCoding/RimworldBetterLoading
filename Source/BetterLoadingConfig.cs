@@ -8,6 +8,9 @@ public class BetterLoadingConfig
     [TomlPrecedingComment("The TipCache caches information about loading screen tips so that they can be displayed as soon as the loading screen starts after the first run.")]
     public TipCacheConfig TipCache; 
     
+    [TomlPrecedingComment("Enable verbose logging for BetterLoading. This is useful for debugging, but may slow down the game.")]
+    public bool VerboseLogging = false;
+    
     public BetterLoadingConfig()
     {
         TipCache = new();

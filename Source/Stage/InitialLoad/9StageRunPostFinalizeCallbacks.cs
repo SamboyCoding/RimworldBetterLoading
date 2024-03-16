@@ -27,7 +27,7 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string GetStageName()
         {
-            return "Running Post-Finalize Callbacks";
+            return "Running Post-Static-Constructor Long Events";
         }
 
         public override string? GetCurrentStepName()
@@ -110,24 +110,24 @@ namespace BetterLoading.Stage.InitialLoad
                     {
                         if (initialNumTasksToRun != _numTasksToRun)
                             Log.Message($"[BetterLoading] Processed an additional {_numTasksToRun - initialNumTasksToRun} post-finalize tasks.");
+                        GlobalTimingData.TicksFinishedPostFinalize = DateTime.UtcNow.Ticks;
                         _finishedExecuting = true;
                     })
             );
 
             LongEventHandler.QueueLongEvent(() =>
             {
-                Thread.Sleep(500);
+                Thread.Sleep(0);
 
                 // Log.Message("[BetterLoading] Blocking loading screen from being dismissed until post-finalize actions are complete.");
                 while (!_finishedExecuting)
                 {
-                    Thread.Sleep(500); //Wait
+                    Thread.Sleep(0); //Wait
                 }
 
                 Log.Message("[BetterLoading] Obtained lock, assuming we're done with post-finalize.");
 
                 Thread.Sleep(0);
-                GlobalTimingData.TicksFinishedPostFinalize = DateTime.UtcNow.Ticks;
 
                 _finishedExecuting = true;
             }, null, true, null);

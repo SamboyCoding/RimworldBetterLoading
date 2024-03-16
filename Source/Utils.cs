@@ -27,5 +27,11 @@ namespace BetterLoading
         {
             return false;
         }
+        
+        public static void DebugLog(string message)
+        {
+            if (BetterLoadingConfigManager.Config.VerboseLogging)
+                Verse.Log.Message($"[BetterLoading Verbose] {message}");
+        }
     }
 }
