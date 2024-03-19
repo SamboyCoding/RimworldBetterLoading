@@ -33,7 +33,14 @@ namespace BetterLoading
         };
         
         /// <summary>
-        /// The load list used at game boot.
+        /// The load list used during loading a save (Game.LoadGame)
+        ///
+        /// Stage 0 - Load Small Components. Initial load up until beginning of World.ExposeData.
+        /// Stage 1 - Load World Map. Covers World.ExposeData and the subsequent call to World.FinalizeInit from Game.LoadGame
+        /// Stage 2 - Load Maps. Covers Map.ExposeData for each map in the save
+        /// Stage 3 - Finalize Scribe Load. Covers Scribe.loader.FinalizeLoading, which essentially just calls ResolveAllCrossReferences and DoAllPostLoadInits.
+        /// Stage 4 - Finalize Maps. Covers Map.FinalizeLoading (which is called directly for each map from Game.LoadGame). Ends when FinalizeLoading returns on the last map.
+        /// Stage 5 - Finalize Game State. Covers everything from the end of FinalizeLoading on the last map, until the long event finishes, which in practice is Game.FinalizeInit and GameComponentUtility.LoadedGame
         /// </summary>
         internal static List<LoadingStage> LoadSaveFileLoadList = new()
         {
@@ -42,7 +49,7 @@ namespace BetterLoading
             new LoadWorldMap(BetterLoadingMain.hInstance),
             new LoadMaps(BetterLoadingMain.hInstance),
             new FinalizeScribeLoad(BetterLoadingMain.hInstance),
-            new SpawnAllThings(BetterLoadingMain.hInstance),
+            new FinalizeMap(BetterLoadingMain.hInstance),
             new FinalizeGameState(BetterLoadingMain.hInstance)
         };
         

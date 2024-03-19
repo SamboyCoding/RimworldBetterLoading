@@ -49,14 +49,14 @@ namespace BetterLoading.Stage.SaveLoad
             
             var text = $"Map {_currMapNum + 1} of {NumMaps}: ";
 
-            if (_currMapLoadedCompressed)
-                return text + "Loading Things";
+            if (_currMapInitialized)
+                return text + "Loading Components";
 
             if (_currMapLoadedComponents)
                 return text + "Loading Compressed Map Data";
-
-            if (_currMapInitialized)
-                return text + "Loading Components";
+            
+            if (_currMapLoadedCompressed)
+                return text + "Loading Things";
 
             return text + "Reading Data";
         }
@@ -67,15 +67,15 @@ namespace BetterLoading.Stage.SaveLoad
                 return 0;
             
             var baseValue = _currMapNum * 4;
-            
-            if (_currMapLoadedCompressed)
-                return baseValue + 3;
-
-            if (_currMapLoadedComponents)
-                return baseValue + 2;
 
             if (_currMapInitialized)
                 return baseValue + 1;
+            
+            if (_currMapLoadedComponents)
+                return baseValue + 2;
+
+            if (_currMapLoadedCompressed)
+                return baseValue + 3;
 
             return baseValue;
         }
