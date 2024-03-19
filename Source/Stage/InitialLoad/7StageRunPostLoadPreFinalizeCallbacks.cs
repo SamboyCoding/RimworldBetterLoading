@@ -37,8 +37,16 @@ namespace BetterLoading.Stage.InitialLoad
             if (_currentAction == null)
                 return "Waiting for tasks to start being processed...";
             
-            if(_currentAction is { Target: ModContentPack mcp, Method.Name: nameof(ModContentPack.ReloadContent) + "Int" })
-                return $"Reloading content for {mcp.Name}";
+            if(_currentAction.Method is {} method && method.DeclaringType?.DeclaringType == typeof(ModContentPack))
+            {
+                //On 1.4 this Action was directly just a call to ModContentPack.ReloadContentInt.
+                //Now on 1.5 it's an anon method wrapping that call due to a hotReload bool being added.
+                //Let's try to grab the mod if we can
+                var anonTypeInst = _currentAction.Target;
+                //Compiler generated field `<>4__this` is the ModContentPack itself.
+                if(anonTypeInst.GetType()?.GetField("<>4__this", AccessTools.all) is {} theField && theField.GetValue(anonTypeInst) is ModContentPack mcp)
+                    return $"Reloading content for {mcp.Name}";
+            }
 
             var methodDeclaringType = _currentAction.Method.DeclaringType?.FullName ?? "<unknown anonymous method>";
             var methodName = _currentAction.Method?.Name ?? "<unknown method>";
@@ -104,6 +112,7 @@ namespace BetterLoading.Stage.InitialLoad
                 2 => "b__4_2",
                 3 => "b__4_3",
                 4 => "b__4_5",
+                5 => "b__4_4",
                 _ => throw new ArgumentOutOfRangeException()
             };
 

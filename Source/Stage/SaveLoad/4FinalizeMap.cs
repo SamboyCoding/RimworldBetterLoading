@@ -94,7 +94,7 @@ namespace BetterLoading.Stage.SaveLoad
             
             //SpawnThings
             instance.Patch(
-                AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.Spawn), new[] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool)}),
+                AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.Spawn), new[] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool), typeof(bool)}),
                 new(typeof(FinalizeMap), nameof(OnThingAboutToSpawn))
             );
 

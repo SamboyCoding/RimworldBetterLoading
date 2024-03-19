@@ -9,12 +9,12 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <Optimize>true</Optimize>
-    <OutDir>..\1.4\Assemblies\</OutDir>
-    <OutputPath>..\1.4\Assemblies\</OutputPath>
+    <OutDir>..\1.5\Assemblies\</OutDir>
+    <OutputPath>..\1.5\Assemblies\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutDir>..\1.4\Assemblies\</OutDir>
-    <OutputPath>..\1.4\Assemblies\</OutputPath>
+    <OutDir>..\1.5\Assemblies\</OutDir>
+    <OutputPath>..\1.5\Assemblies\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Culture=neutral, PublicKeyToken=null">

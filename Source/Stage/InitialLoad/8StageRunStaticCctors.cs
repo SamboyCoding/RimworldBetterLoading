@@ -62,11 +62,11 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            if (VersionControl.CurrentMinor == 4)
+            if (VersionControl.CurrentMinor is 4 or 5)
             {
                 //1.4, we need to patch the entire <DoPlayLoad>b__4_5 method and make it not run, instead of just CallAll, because there's 2 other method calls in that anon method which we don't wanna do until after static constructors
                 var anonType = typeof(PlayDataLoader).GetNestedTypes(AccessTools.all).First(t => t.Name.Contains("<>"));
-                var method = AccessTools.Method(anonType, "<DoPlayLoad>b__4_5");
+                var method = AccessTools.Method(anonType, VersionControl.CurrentMinor == 4 ? "<DoPlayLoad>b__4_5" : "<DoPlayLoad>b__4_4");
                 instance.Patch(method, new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreCallAll)));
             }
             else
