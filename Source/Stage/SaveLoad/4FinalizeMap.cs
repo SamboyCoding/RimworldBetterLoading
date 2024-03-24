@@ -3,7 +3,6 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using RimWorld;
 using Verse;
-using Verse.AI;
 
 namespace BetterLoading.Stage.SaveLoad
 {
@@ -93,8 +92,14 @@ namespace BetterLoading.Stage.SaveLoad
             instance.Patch(AccessTools.Method(typeof(Map), nameof(Map.FinalizeLoading)), new(typeof(FinalizeMap), nameof(OnMapStartFinalizeLoad)), new(typeof(FinalizeMap), nameof(OnMapFinishFinalizeLoad)));
             
             //SpawnThings
+            var spawnParamTypes =
+#if RIMWORLD_1_5
+                new[] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool), typeof(bool)};
+#else
+                new[] { typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool) };
+#endif
             instance.Patch(
-                AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.Spawn), new[] {typeof(Thing), typeof(IntVec3), typeof(Map), typeof(Rot4), typeof(WipeMode), typeof(bool), typeof(bool)}),
+                AccessTools.Method(typeof(GenSpawn), nameof(GenSpawn.Spawn), spawnParamTypes),
                 new(typeof(FinalizeMap), nameof(OnThingAboutToSpawn))
             );
 
@@ -107,8 +112,10 @@ namespace BetterLoading.Stage.SaveLoad
             //RebuildingPathfindingCache -> FinalizeGeometry2
             instance.Patch(AccessTools.Method(typeof(RegionAndRoomUpdater), nameof(RegionAndRoomUpdater.RebuildAllRegionsAndRooms)), new(typeof(FinalizeMap), nameof(OnMapStartRebuildRegions)));
             
+#if !RIMWORLD_1_3
             //FinalizeGeometry -> InitThings
             instance.Patch(AccessTools.Method(typeof(GasGrid), nameof(GasGrid.RecalculateEverHadGas)), postfix: new(typeof(FinalizeMap), nameof(OnMapFinishFinalizeGeometry)));
+#endif
             
             //InitThings -> ListFilth
             instance.Patch(AccessTools.Method(typeof(ListerFilthInHomeArea), nameof(ListerFilthInHomeArea.RebuildAll)), new(typeof(FinalizeMap), nameof(OnMapStartListFilth)));

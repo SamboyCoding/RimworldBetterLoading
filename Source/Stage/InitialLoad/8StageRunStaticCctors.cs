@@ -35,9 +35,13 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override string? GetCurrentStepName()
         {
-            if((_numRun == (_toRun?.Count ?? 1)) && !_finishedProcessing) 
-                return VersionControl.CurrentMinor == 4 ? "Baking static atlases and cleaning up" : "Cleaning up...";
-            
+            if ((_numRun == (_toRun?.Count ?? 1)) && !_finishedProcessing)
+#if !RIMWORLD_1_3
+                return "Baking static atlases and cleaning up";
+#else
+                return "Cleaning up...";
+#endif
+
             var result = _modType?.FullName ?? "Waiting...";
             if (HasError())
                 result = $"WARNING: An error has occurred previously, now processing {result}";
@@ -62,19 +66,21 @@ namespace BetterLoading.Stage.InitialLoad
 
         public override void DoPatching(Harmony instance)
         {
-            if (VersionControl.CurrentMinor is 4 or 5)
-            {
-                //1.4, we need to patch the entire <DoPlayLoad>b__4_5 method and make it not run, instead of just CallAll, because there's 2 other method calls in that anon method which we don't wanna do until after static constructors
-                var anonType = typeof(PlayDataLoader).GetNestedTypes(AccessTools.all).First(t => t.Name.Contains("<>"));
-                var method = AccessTools.Method(anonType, VersionControl.CurrentMinor == 4 ? "<DoPlayLoad>b__4_5" : "<DoPlayLoad>b__4_4");
-                instance.Patch(method, new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreCallAll)));
-            }
-            else
-            {
-                //Pre-1.4, we can just patch CallAll
-                instance.Patch(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)), new(typeof(StageRunStaticCctors), nameof(PreCallAll)));
-                // instance.Patch(AccessTools.Method(typeof(RuntimeHelpers), nameof(RuntimeHelpers.RunClassConstructor), new []{typeof(RuntimeTypeHandle)}), new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreRunClassConstructor)));
-            }
+#if RIMWORLD_1_3
+            //Pre-1.4, we can just patch CallAll
+            instance.Patch(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)), new(typeof(StageRunStaticCctors), nameof(PreCallAll)));
+#else
+            //1.4, we need to patch the entire <DoPlayLoad>b__4_5 method and make it not run, instead of just CallAll, because there's 2 other method calls in that anon method which we don't wanna do until after static constructors
+            var anonType = typeof(PlayDataLoader).GetNestedTypes(AccessTools.all).First(t => t.Name.Contains("<>"));
+#if RIMWORLD_1_4
+            var method = AccessTools.Method(anonType, "<DoPlayLoad>b__4_5");
+#elif RIMWORLD_1_5
+            var method = AccessTools.Method(anonType, "<DoPlayLoad>b__4_4");
+#else
+            #error Missing method for version > 1.5
+#endif
+            instance.Patch(method, new HarmonyMethod(typeof(StageRunStaticCctors), nameof(PreCallAll)));
+#endif //RIMWORLD_1_3
         }
 
         public override bool HasError()
@@ -87,13 +93,13 @@ namespace BetterLoading.Stage.InitialLoad
             inst = LoadingScreen.GetStageInstance<StageRunStaticCctors>();
 
             var patches = Harmony.GetPatchInfo(AccessTools.Method(typeof(StaticConstructorOnStartupUtility), nameof(StaticConstructorOnStartupUtility.CallAll)));
-            
+
             //We register a prefix, others may have a postfix which will run on a background thread (probably not what they want)
             if (patches?.Postfixes?.Count > 0)
             {
                 Log.Warning("[BetterLoading] One or more mods have Harmony-Postfixed StaticConstructorOnStartupUtility#CallAll. This is likely to cause errors or undesired behavior, as BetterLoading changes this method to be called from another Thread than the UI one. A list of patches follows.");
                 Log.Warning("[BetterLoading] In addition, when BetterLoading is installed, this postfix will run before any static constructors do, so it likely will not behave as the modder intended anyway.");
-                foreach (var postfix in patches.Postfixes) 
+                foreach (var postfix in patches.Postfixes)
                     Log.Warning($"[BetterLoading]    - {postfix.PatchMethod.FullDescription()}");
                 Log.Warning($"[BetterLoading] Modders: Consider either loading this data on world load, using a regular static constructor but asking your users to put the mod last in the load order, or if it MUST be done now, consider using BetterLoading API to detect the start of {nameof(StageRunPostFinalizeCallbacks)}, which fires once static constructors are done.");
                 Log.Warning("[BetterLoading] Players: I'm not interested in this warning, if a mod is breaking, show this message to the person who made that mod, not to me. They can reach out to me if they need assistance.");
@@ -103,17 +109,17 @@ namespace BetterLoading.Stage.InitialLoad
 
         public static IEnumerator StaticConstructAll()
         {
-            if(_toRun == null)
+            if (_toRun == null)
                 throw new InvalidOperationException("StaticConstructAll called before _toRun was set!");
-            
-            if(_queue == null)
+
+            if (_queue == null)
                 throw new InvalidOperationException("StaticConstructAll called before _queue was set!");
-            
+
             GlobalTimingData.TicksStartedCctors = DateTime.UtcNow.Ticks;
             Log.Message("[BetterLoading] Starting StaticConstructAll() to run class constructors without freezing the game...");
             Utils.DebugLog($"Going to run class constructor on {_toRun.Count} types");
             Application.runInBackground = true;
-            
+
             foreach (var type in _toRun)
             {
                 try
@@ -138,7 +144,7 @@ namespace BetterLoading.Stage.InitialLoad
             {
                 Log.Message("[BetterLoading] Finished calling static constructors at " + DateTime.Now.ToLongTimeString() + ".");
                 var existing = LongEventHandlerMirror.ToExecuteWhenFinished;
-                
+
                 Utils.DebugLog($"Finished running class constructors. ToExecuteWhenFinished length (tasks added as a result of calling QueueLongEvent while running static cctors) is {existing.Count}, " +
                                $"_queue length is {_queue.Count}");
 
@@ -166,14 +172,13 @@ namespace BetterLoading.Stage.InitialLoad
                 // Log.Message($"[BetterLoading] Job queue restored. Running GC...");
 
                 StaticConstructorOnStartupUtility.coreStaticAssetsLoaded = true;
-                
-                var isOnePointFour = VersionControl.CurrentMajor == 1 && VersionControl.CurrentMinor == 4;
-                if (isOnePointFour)
-                {
-                    Utils.DebugLog("1.4 detected, calling BakeStaticAtlases");
-                    GlobalTextureAtlasManager.BakeStaticAtlases();
-                    Utils.DebugLog("BakeStaticAtlases finished");
-                }
+
+
+#if !RIMWORLD_1_3
+                Utils.DebugLog("1.4+ detected, calling BakeStaticAtlases");
+                GlobalTextureAtlasManager.BakeStaticAtlases();
+                Utils.DebugLog("BakeStaticAtlases finished");
+#endif
 
                 GC.Collect(int.MaxValue, GCCollectionMode.Forced); //Copied from PlayDataLoader
 
@@ -197,9 +202,9 @@ namespace BetterLoading.Stage.InitialLoad
             _toRun = GenTypes.AllTypesWithAttribute<StaticConstructorOnStartup>().ToList();
 
             // Log.Message("[BetterLoading] Overriding LongEventHandler's toExecuteWhenFinished", true);
-            
+
             var result = LongEventHandlerMirror.ToExecuteWhenFinished;
-            
+
             Utils.DebugLog($"Harmony prefix on StaticConstructorOnStartupUtility.CallAll() called. Found {_toRun.Count} types with StaticConstructorOnStartup attribute, and {result.Count} actions in ToExecuteWhenFinished.");
             if (BetterLoadingConfigManager.Config.VerboseLogging)
             {
@@ -210,20 +215,26 @@ namespace BetterLoading.Stage.InitialLoad
 
             // Log.Message($"[BetterLoading]    Got list of pending actions: {result}. Removing up to and including the static constructor call...", true);
 
-            var isOnePointFour = VersionControl.CurrentMajor == 1 && VersionControl.CurrentMinor == 4;
-            var methodNameSubstring = isOnePointFour ? "b__4_5" : "m__2";
-            var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.DeclaringType?.Name == nameof(PlayDataLoader) && i.Method.Name.Contains(methodNameSubstring));
+#if RIMWORLD_1_3
+            var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.DeclaringType?.Name == nameof(PlayDataLoader) && i.Method.Name.Contains("m__2"));
+#elif RIMWORLD_1_4
+            var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.DeclaringType?.Name == nameof(PlayDataLoader) && i.Method.Name.Contains("b__4_5"));
+#elif RIMWORLD_1_5
+            var staticCallIdx = result.FindIndex(i => i.Method.DeclaringType?.DeclaringType?.Name == nameof(PlayDataLoader) && i.Method.Name.Contains("b__4_4"));
+#else
+            #error Missing staticCallIdx for this version
+#endif
 
             // Log.Message($"[BetterLoading]        (Which is at index {staticCallIdx} of {result.Count})", true);
-            
+
             Utils.DebugLog($"PlayDataLoader static constructor call index is at position {staticCallIdx} of {result.Count} in the queue. Everything before this will be removed, and the remaining tasks saved");
 
             result = result.Skip(staticCallIdx + 1).Take(int.MaxValue).ToList(); //Remove the static constructor call
 
             _queue = result;
-            
+
             Utils.DebugLog($"After removing the static constructor call, the queue has {result.Count} items. Saving this for later.");
-            
+
             BetterLoadingMain.LoadingScreen!.StartCoroutine(StaticConstructAll());
 
             LongEventHandlerMirror.ToExecuteWhenFinished = new();
@@ -239,12 +250,14 @@ namespace BetterLoading.Stage.InitialLoad
             // Log.Message("[BetterLoading] Blocking LEH until static ctors finish", true);
             Thread.Sleep(1000);
             // Log.Message("[BetterLoading] Awaiting release of lock...");
-            
-            while(!_finishedProcessing){Thread.Sleep(2000);} //wait for sync lock to be available
-            
+
+            while (!_finishedProcessing)
+            {
+                Thread.Sleep(2000);
+            } //wait for sync lock to be available
+
             // Log.Message("[BetterLoading] Lock released, assuming we're finished calling static ctors", true);
             Thread.Sleep(0);
-            
         }
     }
 }
