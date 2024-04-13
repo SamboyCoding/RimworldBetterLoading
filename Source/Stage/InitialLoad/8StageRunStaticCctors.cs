@@ -127,14 +127,16 @@ namespace BetterLoading.Stage.InitialLoad
                     _modType = type;
 
                     RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-
-                    _numRun++;
-                    BetterLoadingApi.DispatchChange(inst);
                 }
                 catch (Exception e)
                 {
                     Log.Error("[BetterLoading] Exception occurred processing mod finalize events! Details: " + e);
                     _encounteredException = e;
+                }
+                finally
+                {
+                    _numRun++;
+                    BetterLoadingApi.DispatchChange(inst);
                 }
 
                 yield return null;
