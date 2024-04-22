@@ -33,11 +33,11 @@ namespace BetterLoading
         }
 
 
-        public static string? LastShownTip;
-        public static DateTime TimeLastTipShown = DateTime.MinValue;
-        public static int TicksPerTip = 5 * 10_000_000; //3 seconds
+        static string? LastShownTip;
+        static DateTime TimeLastTipShown = DateTime.MinValue;
+        const int MinTicksPerTip = 5 * 10_000_000; //5 seconds
 
-        public static List<BetterLoadingTip> Tips = new();
+        static List<BetterLoadingTip> Tips = new();
 
         public static void OnAvailableTipSetChanged()
         {
@@ -111,9 +111,14 @@ namespace BetterLoading
             if (Tips.Count == 0 && (!GameTipDatabaseHasLoaded || HideVanillaTips))
                 return HideVanillaTips ? "Gameplay tips will be shown here once they are loaded" : "Gameplay tips will be shown here once the game loads them (after stage 7 completes)";
 
-            var timeCurrentTipShownFor = (DateTime.Now - TimeLastTipShown).Ticks;
-
-            if (LastShownTip != null && timeCurrentTipShownFor < TicksPerTip)
+            var timeCurrentTipShownFor = (DateTime.UtcNow - TimeLastTipShown).Ticks;
+            long showTime = MinTicksPerTip;
+            if (!string.IsNullOrWhiteSpace(LastShownTip))
+            {
+                var words = LastShownTip!.Split(' ').Length / 3.3; // ≈ 200 words per minute
+                showTime = Math.Max(showTime, (long)(words * 10_000_000)); 
+            }
+            if (LastShownTip != null && timeCurrentTipShownFor < showTime)
                 //We have a tip and it's not been long enough to change to the next one yet, return the last one
                 return LastShownTip;
 
@@ -122,7 +127,7 @@ namespace BetterLoading
                 ? "BetterLoading Warning: No tips could be located in your game. This is probably a bug with another mod"
                 : FormatTip(Tips.Pop());
 
-            TimeLastTipShown = DateTime.Now;
+            TimeLastTipShown = DateTime.UtcNow;
 
             return LastShownTip;
         }
