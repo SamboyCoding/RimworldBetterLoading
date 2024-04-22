@@ -33,11 +33,11 @@ namespace BetterLoading
         }
 
 
-        static string? LastShownTip;
-        static DateTime TimeLastTipShown = DateTime.MinValue;
-        const int MinTicksPerTip = 5 * 10_000_000; //5 seconds
+        public static string? LastShownTip;
+        public static DateTime TimeLastTipShown = DateTime.MinValue;
+        public const long MinTicksPerTip = 5 * 10_000_000; //5 seconds
 
-        static List<BetterLoadingTip> Tips = new();
+        public static List<BetterLoadingTip> Tips = new();
 
         public static void OnAvailableTipSetChanged()
         {
@@ -112,7 +112,7 @@ namespace BetterLoading
                 return HideVanillaTips ? "Gameplay tips will be shown here once they are loaded" : "Gameplay tips will be shown here once the game loads them (after stage 7 completes)";
 
             var timeCurrentTipShownFor = (DateTime.UtcNow - TimeLastTipShown).Ticks;
-            long showTime = MinTicksPerTip;
+            var showTime = MinTicksPerTip;
             if (!string.IsNullOrWhiteSpace(LastShownTip))
             {
                 var words = LastShownTip!.Split(' ').Length / 3.3; // ≈ 200 words per minute
