@@ -3,9 +3,11 @@ using BetterLoading.Stage.InitialLoad;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BetterLoading.Stage.SaveLoad;
 using UnityEngine;
 using Verse;
+using RimWorld;
 
 namespace BetterLoading
 {
@@ -118,6 +120,18 @@ namespace BetterLoading
         public void Awake()
         {
             Log.Message("[BetterLoading] Injected into main UI.");
+        }
+
+        public void PickBackground()
+        {
+            try
+            {
+                Background = ((UI_BackgroundMain)UIMenuBackgroundManager.background).overrideBGImage ?? (typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null) as Texture2D);
+            }
+            catch (Exception e)
+            {
+                Log.Warning($"Failed to find or set background texture:\n{e}");
+            }
         }
 
         private void DrawBackground()

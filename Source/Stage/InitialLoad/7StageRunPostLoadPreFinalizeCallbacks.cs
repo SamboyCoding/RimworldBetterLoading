@@ -81,6 +81,11 @@ namespace BetterLoading.Stage.InitialLoad
             inst = LoadingScreen.GetStageInstance<StageRunPostLoadPreFinalizeCallbacks>();
         }
 
+        public override void BecomeInactive()
+        {
+            BetterLoadingMain.LoadingScreen!.PickBackground();
+        }
+
         public override void DoPatching(Harmony instance)
         {
             instance.Patch(AccessTools.Method(typeof(LongEventHandler), "ExecuteToExecuteWhenFinished"), new(typeof(StageRunPostLoadPreFinalizeCallbacks), nameof(PreExecToExecWhenFinished)));

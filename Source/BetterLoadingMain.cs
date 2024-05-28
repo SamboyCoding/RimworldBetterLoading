@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using BetterLoading.Compat;
 using BetterLoading.Stage.SaveLoad;
 using HarmonyLib;
@@ -116,14 +115,7 @@ namespace BetterLoading
 
         private static void InitLoadingScreenBackground()
         {
-            try
-            {
-                LoadingScreen!.Background = typeof(UI_BackgroundMain).GetField("BGPlanet", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null) as Texture2D;
-            }
-            catch (Exception e)
-            {
-                Log.Warning($"Failed to find or set background texture:\n{e}");
-            }
+            LoadingScreen!.PickBackground();
         }
 
         private void CreateTimingReport()
