@@ -54,6 +54,10 @@ namespace BetterLoading.Stage.InitialLoad
             base.BecomeInactive();
             Log.Message("[BetterLoading] Tips should now be available. Showing...");
             LoadingScreenTipManager.GameTipDatabaseHasLoaded = true;
+            if (!Prefs.RandomBackgroundImage)
+            {
+                BetterLoadingMain.LoadingScreen!.Background = Prefs.BackgroundImageExpansion.BackgroundImage;
+            }
         }
 
         public override void DoPatching(Harmony instance)
